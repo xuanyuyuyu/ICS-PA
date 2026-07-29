@@ -77,7 +77,8 @@ static int cmd_info(char *args) {
 static int cmd_x(char *args) {
   char *arg1 = strtok(NULL, " ");
   char *arg2 = strtok(NULL, " ");
-
+  char *address = NULL;
+  strcpy(address, arg2 + 2);
   vaddr_t addr = atoi(arg2);
   for(int i = 0; i < atoi(arg1); i ++) {
     word_t value = vaddr_read(addr, 4);
