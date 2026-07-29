@@ -34,7 +34,7 @@ static char* rl_gets() {
   }
 
   line_read = readline("(nemu) ");
-
+  //如果读取成功，并且不是空行
   if (line_read && *line_read) {
     add_history(line_read);
   }
@@ -43,7 +43,8 @@ static char* rl_gets() {
 }
 
 static int cmd_c(char *args) {
-  cpu_exec(-1);
+  //-1会被转换成无穷大
+  cpu_exec(-1);  //给一个几乎不可能执行完的指令数量，让程序持续运行，直到遇到结束、异常、断点等事件主动退出循环。
   return 0;
 }
 
@@ -57,12 +58,13 @@ static int cmd_help(char *args);
 static struct {
   const char *name;
   const char *description;
+  //函数指针
   int (*handler) (char *);
 } cmd_table [] = {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  
   /* TODO: Add more commands */
 
 };
@@ -113,6 +115,7 @@ void sdb_mainloop() {
      * which may need further parsing
      */
     char *args = cmd + strlen(cmd) + 1;
+    //如果参数起点在命令行传入的字符串之后，则没有参数
     if (args >= str_end) {
       args = NULL;
     }
@@ -123,6 +126,7 @@ void sdb_mainloop() {
 #endif
 
     int i;
+    //NR_CMD是cmdtable的长度
     for (i = 0; i < NR_CMD; i ++) {
       if (strcmp(cmd, cmd_table[i].name) == 0) {
         if (cmd_table[i].handler(args) < 0) { return; }
