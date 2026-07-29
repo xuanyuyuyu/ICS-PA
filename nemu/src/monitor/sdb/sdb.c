@@ -14,11 +14,14 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <memory/vaddr.h>
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "common.h"
 #include "sdb.h"
 #include "utils.h"
+
 
 static int is_batch_mode = false;
 
@@ -49,11 +52,50 @@ static int cmd_c(char *args) {
   return 0;
 }
 
+static int cmd_si(char *args) {
+  /* extract the first argument */
+  char *arg = strtok(NULL, " ");
+  int step = 1;
+  if(arg[0] != '\0') {
+    step = atoi(args);
+  }
+  cpu_exec(step); 
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  /* extract the first argument */
+  char *arg = strtok(NULL, " ");
+  if(strcmp(arg, "r") == 0) {
+    isa_reg_display();
+  } else if(strcmp(arg, "w") == 0) {
+    // TODO  看watchpointer
+  }
+  return 0;
+}
+
+static int cmd_x(char *args) {
+  char *arg1 = strtok(NULL, " ");
+  char *arg2 = strtok(NULL, " ");
+
+  vaddr_t addr = atoi(arg2);
+  for(int i = 0; i < atoi(arg1); i ++) {
+    word_t value = vaddr_read(addr, 4);
+    printf(FMT_WORD ": " FMT_WORD "\n", addr, value);
+    
+    addr += 4;
+  }
+
+  return 0;
+
+}
 
 static int cmd_q(char *args) {
   //nemu_state.state = NEMU_QUIT;
   return -1;
 }
+
+
 
 static int cmd_help(char *args);
 
@@ -68,7 +110,9 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   
   /* TODO: Add more commands */
-
+  { "si", "single step to execution", cmd_si },
+  { "info", "show some info about reg or watchpointer", cmd_info},
+  { "x", "show some value", cmd_x}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
