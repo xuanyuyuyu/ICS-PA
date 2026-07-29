@@ -13,6 +13,11 @@
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
 
+# Use four parallel jobs by default while allowing an explicit -j option to override it.
+ifeq ($(filter -j% --jobs%,$(MAKEFLAGS)),)
+MAKEFLAGS += -j4
+endif
+
 # Sanity check
 ifeq ($(wildcard $(NEMU_HOME)/src/nemu-main.c),)
   $(error NEMU_HOME=$(NEMU_HOME) is not a NEMU repo)
