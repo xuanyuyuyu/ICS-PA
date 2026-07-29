@@ -56,8 +56,8 @@ static int cmd_si(char *args) {
   /* extract the first argument */
   char *arg = strtok(NULL, " ");
   int step = 1;
-  if(arg[0] != '\0') {
-    step = atoi(args);
+  if(arg != NULL) {
+    step = atoi(arg);
   }
   cpu_exec(step); 
   return 0;
