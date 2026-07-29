@@ -77,9 +77,11 @@ static int cmd_info(char *args) {
 static int cmd_x(char *args) {
   char *arg1 = strtok(NULL, " ");
   char *arg2 = strtok(NULL, " ");
-  char *address = NULL;
-  strcpy(address, arg2 + 2);
-  vaddr_t addr = atoi(arg2);
+  char *end;
+  vaddr_t addr = strtoul(arg2, &end, 16);
+  if(*end != '\0') {
+    printf("地址格式错误！\n");
+  } 
   for(int i = 0; i < atoi(arg1); i ++) {
     word_t value = vaddr_read(addr, 4);
     printf(FMT_WORD ": " FMT_WORD "\n", addr, value);
