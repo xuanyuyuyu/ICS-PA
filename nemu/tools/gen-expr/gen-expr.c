@@ -31,8 +31,39 @@ static char *code_format =
 "  return 0; "
 "}";
 
+static int choose(int n) {
+  return rand() % n;
+}
+
+static void gen(char c) {
+  int len = strlen(buf);
+  buf[len] = c;
+  buf[len + 1] = '\0';
+}
+
+static void gen_num() {
+  char num[20];
+  int value = rand() % 100;
+
+  sprintf(num, "%d", value);
+
+  strcat(buf, num);
+}
+
+static void gen_rand_op() {
+  char *ops = {'+', '-', '*', '/'};
+  int rand_num = rand() % 4;
+  int len = strlen(buf);
+  buf[len] = ops[rand_num];
+  buf[len + 1] = '\0';
+}
+
 static void gen_rand_expr() {
-  buf[0] = '\0';
+    switch(choose(3)) {
+      case 0: gen_num(); break;
+      case 1: gen('('); gen_rand_expr(); gen(')'); break;
+      case 2: gen_rand_expr(); gen_rand_op(); gen_rand_expr(); break;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -46,6 +77,7 @@ int main(int argc, char *argv[]) {
   for (i = 0; i < loop; i ++) {
     gen_rand_expr();
 
+    //把 buf（表达式字符串，如 1 + 2 * 3）嵌入到 code_format 这个 C 程序模板里，结果写入 code_buf
     sprintf(code_buf, code_format, buf);
 
     FILE *fp = fopen("/tmp/.code.c", "w");
@@ -55,7 +87,8 @@ int main(int argc, char *argv[]) {
 
     int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
     if (ret != 0) continue;
-
+    
+    // 执行程序并读取
     fp = popen("/tmp/.expr", "r");
     assert(fp != NULL);
 

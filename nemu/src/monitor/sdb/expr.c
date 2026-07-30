@@ -149,6 +149,101 @@ static bool make_token(char *e) {
   return true;
 }
 
+bool check_parentheses(word_t p, word_t q) {
+  if(tokens[p].type != '(' || tokens[q].type != ')') return false;
+  int count = 0;
+  for(int i = p + 1; i < q; i ++) {
+    int token_type = tokens[i].type;
+    if(token_type == '(') count ++;
+    if(token_type == ')') count --; 
+    if(count < 0){
+      panic("表达式求值出现错误：括号不匹配");
+      return false;
+    } 
+  }
+  
+  if(count != 0) {
+    panic("表达式求值出现错误：括号不匹配");
+    return false;
+  }
+  return true;
+}
+
+/*找到当前表达式优先级最低的运算符*/
+int position_of_main_operation(word_t p, word_t q) {
+  
+  int main_position = -1;
+  int min_priority = 100;
+
+  int level = 0;  //括号层数
+
+  for(int i = p; i <= q; i ++) {
+    int token_type = tokens[i].type;
+    //遇到左括号，进入括号内部
+    if(token_type == '(') {
+      level ++;
+      continue;
+    }
+    //遇到右括号，退出括号内部
+    if(token_type == ')') {
+      level --;
+      continue;
+    }
+    //括号内部的运算符不能作为主运算符
+    if(level > 0) {
+      continue;
+    }
+    int priority = 0;
+    switch (token_type) {
+      //低优先级
+      case '+':
+      case '-':
+        priority = 1;
+        break;
+      case '*':
+      case '/':
+        priority = 2;
+        break;
+      //不是运算符
+      default:
+        continue;
+    }
+    /*找最低运算符(最右边的)*/
+    if (priority <= min_priority) {
+      min_priority = priority;
+      main_position = i;
+    }
+  }
+  
+  return main_position;
+}
+
+
+word_t eval(word_t p, word_t q) {
+  if(p > q) {
+    panic("表达式求值出现错误: p > q");
+  } else if (p == q) {
+    return strtoul(tokens[p].str, NULL, 0);
+  } else if (check_parentheses(p, q) == true) {
+    return eval(p + 1, q - 1);
+  } else {
+    int op = position_of_main_operation(p, q);
+    word_t val1 = eval(p, op - 1);
+    word_t val2 = eval(op + 1, q);
+    word_t op_type = tokens[op].type;
+    switch (op_type) {
+      case '+': return val1 + val2;
+      case '-': return val1 - val2;
+      case '*': return val1 * val2;
+      case '/':
+        {
+          if(val2 == 0) panic("表达式除零错误 ！");
+          return val1 / val2;
+        } 
+      default: assert(0);
+    }
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
@@ -156,8 +251,7 @@ word_t expr(char *e, bool *success) {
     return 0;
   }
 
-  /* TODO: Insert codes to evaluate the expression. */
-  TODO();
+  eval(0, nr_token);
 
   return 0;
 }
