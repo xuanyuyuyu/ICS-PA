@@ -19,26 +19,35 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
-
 enum {
-  TK_NOTYPE = 256, TK_EQ,
-
-  /* TODO: Add more token types */
-
+  TK_NOTYPE = 256, TK_HEX,
+  TK_NUM, TK_REG,
+  TK_EQ, TK_NEQ, 
+  TK_AND, TK_OR,
+  TK_ASSIGN,
 };
 
 static struct rule {
   const char *regex;
   int token_type;
 } rules[] = {
-
-  /* TODO: Add more rules.
-   * Pay attention to the precedence level of different rules.
-   */
-
   {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
+  {"0[xX][0-9a-fA-F]+", TK_HEX},
+  {"[0-9]+", TK_NUM},
+  {"\\$[a-zA-Z][a-zA-Z0-9]+", TK_REG},
   {"==", TK_EQ},        // equal
+  {"!=", TK_NEQ},
+  {"&&", TK_AND},
+  {"\\|\\|", TK_OR},
+  {"\\+", '+'},         // plus
+  {"-", '-'},
+  {"\\*", '*'},
+  {"\\/", '/'},
+  
+  {"\\(", '('},
+  {"\\)", ')'},
+  
+  {"=", TK_ASSIGN}
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -89,15 +98,44 @@ static bool make_token(char *e) {
 
         position += substr_len;
 
-        /* TODO: Now a new token is recognized with rules[i]. Add codes
-         * to record the token in the array `tokens'. For certain types
-         * of tokens, some extra actions should be performed.
-         */
+        //把匹配到的字符串放到tokens里面
+        int copy_len = substr_len < 31 ? substr_len : 31;
+        strncpy(tokens[nr_token].str, substr_start, copy_len);
+        tokens[nr_token].str[copy_len] = '\0';
 
         switch (rules[i].token_type) {
-          default: TODO();
+          case TK_NOTYPE:
+            tokens[nr_token].type = TK_NOTYPE; break;
+          case TK_HEX:
+            tokens[nr_token].type = TK_HEX; break;
+          case TK_NUM:
+            tokens[nr_token].type = TK_NUM; break;
+          case TK_EQ:
+            tokens[nr_token].type = TK_REG; break;
+          case TK_NEQ:
+            tokens[nr_token].type = TK_REG; break;
+          case TK_AND:
+            tokens[nr_token].type = TK_AND; break;
+          case TK_OR:
+            tokens[nr_token].type = TK_OR; break;
+          case '+':
+            tokens[nr_token].type = '+'; break;
+          case '-':
+            tokens[nr_token].type = '-'; break;
+          case '*':
+            tokens[nr_token].type = '*'; break;
+          case '/':
+            tokens[nr_token].type = '/'; break;
+          case '(':
+            tokens[nr_token].type = '('; break;
+          case ')':
+            tokens[nr_token].type = ')'; break;
+          case '=':
+            tokens[nr_token].type = TK_ASSIGN; break;
+          default: 
+            panic("unhandled token type: %d", rules[i].token_type);
         }
-
+        nr_token ++;
         break;
       }
     }
