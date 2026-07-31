@@ -58,6 +58,8 @@ int main(int argc, char **argv) {
     bool success = false;
     word_t actual = expr(expression, &success);
 
+    printf("============================即将开始计算\n");
+    printf("expr    = %s", expression);
     if(!success || actual != expected) {
       printf("=================================\n");
       printf("Mismatch!\n");

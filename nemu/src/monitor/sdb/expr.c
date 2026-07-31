@@ -163,7 +163,7 @@ bool check_parentheses(word_t p, word_t q) {
   }
   
   if(count != 0) {
-    panic("表达式求值出现错误：括号不匹配！！");
+    panic("表达式求值出现错误：括号不匹配！");
     return false;
   }
   return true;
