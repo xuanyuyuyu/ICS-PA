@@ -14,23 +14,65 @@
 ***************************************************************************************/
 
 #include <common.h>
+#include <stdio.h>
+#include<stdbool.h>
+#include<stdlib.h>
+
+word_t expr(char *e, bool *success);
+void init_regex();
+
 
 void init_monitor(int, char *[]);
 void am_init_monitor();
 void engine_start();
 int is_exit_status_bad();
 
-int main(int argc, char *argv[]) {
-  /* Initialize the monitor. */
-#ifdef CONFIG_TARGET_AM
-  am_init_monitor();
-#else
-  init_monitor(argc, argv);
-#endif
+// int main(int argc, char *argv[]) {
+//   /* Initialize the monitor. */
+// #ifdef CONFIG_TARGET_AM
+//   am_init_monitor();
+// #else
+//   init_monitor(argc, argv);
+// #endif
 
-  /* Start engine. */
-  engine_start();
+//   /* Start engine. */
+//   engine_start();
 
 
-  return is_exit_status_bad();
+//   return is_exit_status_bad();
+// }
+
+int main(int argc, char **argv) {
+  FILE *fp = fopen("input", "r");
+  if(fp == NULL) {
+    perror("input error");
+    return 1;
+  }
+
+  init_regex();
+
+  unsigned expected;
+  char expression[65536];
+
+  while(fscanf(fp, "%u %[^\n]", &expected, expression) == 2) {
+    bool success = false;
+    word_t actual = expr(expression, &success);
+
+    if(!success || actual != expected) {
+      printf("=================================\n");
+      printf("Mismatch!\n");
+      printf("expected = %u\n", expected);
+      printf("actual   = %u\n", actual);
+      printf("expr     = %s\n", expression);
+      printf("=================================\n");
+      break;
+    }
+
+    printf("PASS: %u %s\n", actual, expression);
+
+  }
+
+  fclose(fp);
+
+  return 0;
 }
