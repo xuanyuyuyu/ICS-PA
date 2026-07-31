@@ -19,6 +19,7 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
 // this should be enough
 static char buf[65536] = {};
@@ -41,30 +42,48 @@ static void gen(char c) {
   buf[len + 1] = '\0';
 }
 
-static void gen_num() {
-  char num[20];
-  int value = rand() % 100;
 
-  sprintf(num, "%d", value);
+static bool valid;
 
-  strcat(buf, num);
-}
-
-static void gen_rand_op() {
-  char *ops = {'+', '-', '*', '/'};
-  int rand_num = rand() % 4;
-  int len = strlen(buf);
-  buf[len] = ops[rand_num];
-  buf[len + 1] = '\0';
-}
-
-static void gen_rand_expr() {
-    switch(choose(3)) {
-      case 0: gen_num(); break;
-      case 1: gen('('); gen_rand_expr(); gen(')'); break;
-      case 2: gen_rand_expr(); gen_rand_op(); gen_rand_expr(); break;
+static unsigned gen_rand_expr() {
+  switch(choose(3)) {
+    case 0: {
+      unsigned value = rand() % 100;
+      char num[20];
+      sprintf(num, "%u", value);
+      strcat(buf, num);
+      return value;
     }
+    case 1: {
+      gen('(');
+      unsigned value = gen_rand_expr();
+      gen(')');
+      return value;
+    }
+    case 2: {
+      gen('(');
+      unsigned op1 = gen_rand_expr();
+      char op = "+-*/"[rand() % 4];
+      gen(op);
+      unsigned op2 = gen_rand_expr();
+      gen(')');
+      if(op == '/' && op2 == 0) {
+        valid = false;
+        return 0;
+      }
+
+      switch (op) {
+        case '+': return op1 + op2;
+        case '-': return op1 - op2;
+        case '*': return op1 * op2;
+        case '/': return op1 / op2;
+      }
+
+    }
+  }
+  return 0;
 }
+
 
 int main(int argc, char *argv[]) {
   int seed = time(0);
@@ -75,7 +94,13 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
-    gen_rand_expr();
+    int result;
+    do{
+      buf[0] = '\0';
+      valid = true;
+      result = gen_rand_expr();
+    } while(!valid);
+      
 
     //把 buf（表达式字符串，如 1 + 2 * 3）嵌入到 code_format 这个 C 程序模板里，结果写入 code_buf
     sprintf(code_buf, code_format, buf);
@@ -91,8 +116,7 @@ int main(int argc, char *argv[]) {
     // 执行程序并读取
     fp = popen("/tmp/.expr", "r");
     assert(fp != NULL);
-
-    int result;
+    
     ret = fscanf(fp, "%d", &result);
     pclose(fp);
 
