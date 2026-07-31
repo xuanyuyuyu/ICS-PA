@@ -56,10 +56,12 @@ int main(int argc, char **argv) {
 
   while(fscanf(fp, "%u %[^\n]", &expected, expression) == 2) {
     bool success = false;
-    word_t actual = expr(expression, &success);
 
     printf("============================即将开始计算\n");
-    printf("expr    = %s", expression);
+    printf("expr    = %s\ns", expression);
+
+    word_t actual = expr(expression, &success);
+
     if(!success || actual != expected) {
       printf("=================================\n");
       printf("Mismatch!\n");
