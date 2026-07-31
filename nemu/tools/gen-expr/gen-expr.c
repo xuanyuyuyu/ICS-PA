@@ -24,7 +24,7 @@
 
 // this should be enough
 static char buf[65536] = {};
-static char cbuf[65536] = {};
+static char cbuf[65536] = {};  //有可能会数组越界
 static char code_buf[65536 + 128] = {}; // a little larger than `buf`
 static char *code_format =
 "#include <stdio.h>\n"
