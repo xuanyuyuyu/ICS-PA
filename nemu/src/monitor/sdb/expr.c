@@ -97,7 +97,10 @@ static bool make_token(char *e) {
             i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
         position += substr_len;
-
+        //空格不保存到tokens数组
+        if (rules[i].token_type == TK_NOTYPE) {
+          break;
+        }
         //把匹配到的字符串放到tokens里面
         int copy_len = substr_len < 31 ? substr_len : 31;
         strncpy(tokens[nr_token].str, substr_start, copy_len);
@@ -258,9 +261,6 @@ word_t expr(char *e, bool *success) {
   }
   *success = true;
   unsigned result = eval(0, nr_token-1, success);;
-  if(success) {
-    return result;
-  } else {
-    return 0;
-  }
+  
+  return *success ? result : 0;
 }

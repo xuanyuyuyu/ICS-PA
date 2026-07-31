@@ -99,16 +99,22 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_p(char *args) {
-  char *arg = strtok(NULL, " ");
-  bool success = false;
-
-  word_t result = expr(arg, &success);
-
-  if(!success) {
-    return -1;
+  if(args == NULL) {
+    printf("Usage: p EPR\n");
+    return 0;
   }
 
-  printf("result = %u\n1" ,result);
+
+  bool success = false;
+
+  word_t result = expr(args, &success);
+
+  if(!success) {
+    printf("表达式求值失败!\n");
+    return 0;
+  }
+
+  printf("result = %u\n" ,result);
   return 0;
 }
 
