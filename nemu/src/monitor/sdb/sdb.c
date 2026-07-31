@@ -98,6 +98,19 @@ static int cmd_q(char *args) {
   return -1;
 }
 
+static int cmd_p(char *args) {
+  char *arg = strtok(NULL, " ");
+  bool success = false;
+
+  word_t result = expr(arg, &success);
+
+  if(!success) {
+    return -1;
+  }
+
+  printf("result = %u" ,result);
+  return 0;
+}
 
 
 static int cmd_help(char *args);
@@ -115,7 +128,8 @@ static struct {
   /* TODO: Add more commands */
   { "si", "single step to execution", cmd_si },
   { "info", "show some info about reg or watchpointer", cmd_info},
-  { "x", "show some value", cmd_x}
+  { "x", "show some value", cmd_x},
+  { "p", "calculate a expression", cmd_p}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
