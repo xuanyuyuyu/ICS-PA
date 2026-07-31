@@ -226,11 +226,17 @@ int position_of_main_operation(word_t p, word_t q) {
 
 word_t eval(word_t p, word_t q, bool *success) {
   if(p > q) {
-    printf("表达式求值出现错误: 格式不正确!");
     *success = false;
     return 0;
   } else if (p == q) {
-    return strtoul(tokens[p].str, NULL, 0);
+    if(tokens[p].type == TK_NUM || tokens[p].type == TK_HEX) {
+      return strtoul(tokens[p].str, NULL, 0);
+    }
+    if(tokens[p].type == TK_REG) {
+      return isa_reg_str2val(tokens[p].str, success);
+    }
+    *success = false;
+    return 0;
   } else if (check_parentheses(p, q) == true) {
     return eval(p + 1, q - 1, success);
   } else {
