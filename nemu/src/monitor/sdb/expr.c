@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #
 #include <isa.h>
 
@@ -20,12 +21,14 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
+#include <memory/vaddr.h>
+
 enum {
   TK_NOTYPE = 256, TK_HEX,
   TK_NUM, TK_REG,
   TK_EQ, TK_NEQ, 
   TK_AND, TK_OR,
-  TK_ASSIGN,
+  TK_ASSIGN, TK_DEREF
 };
 
 static struct rule {
@@ -153,9 +156,21 @@ static bool make_token(char *e) {
     }
   }
 
+  //特殊处理解引用，如果当前是*且前面不是特定type，就是解引用
+  for(int i = 0; i < nr_token; i ++) {
+    if(tokens[i].type == '*' && 
+    (i == 0 || 
+        (tokens[i-1].type != TK_NUM &&
+         tokens[i-1].type != TK_HEX &&
+         tokens[i-1].type != TK_REG && 
+         tokens[i - 1].type != ')'))) 
+    {
+      tokens[i].type = TK_DEREF;      
+    }
+  }
   return true;
 }
-//p ((23)*((32+(36))-99))-42)*(94+95
+//判断括号
 bool check_parentheses(word_t p, word_t q) {
   if(tokens[p].type != '(' || tokens[q].type != ')') return false;
   int count = 0;
@@ -223,7 +238,7 @@ int position_of_main_operation(word_t p, word_t q) {
   return main_position;
 }
 
-
+/* 计算主逻辑 */
 word_t eval(word_t p, word_t q, bool *success) {
   if(p > q) {
     *success = false;
@@ -241,44 +256,53 @@ word_t eval(word_t p, word_t q, bool *success) {
     return eval(p + 1, q - 1, success);
   } else {
     int op = position_of_main_operation(p, q);
-    if(op < 0) {
-      *success = false;
-      return 0;
-    }
-
-    word_t op_pos = (word_t)op;
-    if(op_pos <= p || op_pos >= q){
-      *success = false;
-      return 0;
-    }
-
-    word_t val1 = eval(p, op_pos - 1, success);
-    if (!*success) {
-      return 0;
-    }
-
-    word_t val2 = eval(op_pos + 1, q, success);
-    if (!*success) {
-      return 0;
-    }
-    word_t op_type = tokens[op].type;
-    switch (op_type) {
-      case '+': return val1 + val2;
-      case '-': return val1 - val2;
-      case '*': return val1 * val2;
-      case '/':
-        {
-          if(val2 == 0) {
-            *success = false;
-            return 0;
-          }
-          return val1 / val2;
-        } 
-      default: 
+    if(op >= 0){
+      word_t op_pos = (word_t)op;
+      if(op_pos <= p || op_pos >= q){
         *success = false;
         return 0;
+      }
+
+      word_t val1 = eval(p, op_pos - 1, success);
+      if (!*success) {
+        return 0;
+      }
+
+      word_t val2 = eval(op_pos + 1, q, success);
+      if (!*success) {
+        return 0;
+      }
+      word_t op_type = tokens[op_pos].type;
+      switch (op_type) {
+        case '+': return val1 + val2;
+        case '-': return val1 - val2;
+        case '*': return val1 * val2;
+        case '/':
+          {
+            if(val2 == 0) {
+              *success = false;
+              return 0;
+            }
+            return val1 / val2;
+          } 
+        default: 
+          *success = false;
+          return 0;
+      }
     }
   }
+
+  /* 没有二元主运算符，再检查一元解引用 */
+  if(tokens[p].type == TK_DEREF && p < q) {
+    word_t addr = eval(p + 1, q, success);
+    if(!*success) {
+      return 0;
+    }
+    return vaddr_read((vaddr_t)addr, sizeof(word_t));
+  }
+  *success = false;
+
+  return 0;
 }
 
 word_t expr(char *e, bool *success) {
@@ -286,6 +310,7 @@ word_t expr(char *e, bool *success) {
     *success = false;
     return 0;
   }
+  
   *success = true;
   unsigned result = eval(0, nr_token-1, success);;
   
