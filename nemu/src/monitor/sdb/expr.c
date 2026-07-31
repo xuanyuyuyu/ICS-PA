@@ -13,7 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include "common.h"
+#
 #include <isa.h>
 
 /* We use the POSIX regex functions to process regular expressions.
@@ -35,7 +35,7 @@ static struct rule {
   {" +", TK_NOTYPE},    // spaces
   {"0[xX][0-9a-fA-F]+", TK_HEX},
   {"[0-9]+", TK_NUM},
-  {"\\$[a-zA-Z][a-zA-Z0-9]+", TK_REG},
+  {"\\$[a-zA-Z0-9]+", TK_REG},
   {"==", TK_EQ},        // equal
   {"!=", TK_NEQ},
   {"&&", TK_AND},
@@ -114,10 +114,12 @@ static bool make_token(char *e) {
             tokens[nr_token].type = TK_HEX; break;
           case TK_NUM:
             tokens[nr_token].type = TK_NUM; break;
+          case TK_REG:
+            tokens[nr_token].type = TK_REG; break;
           case TK_EQ:
-            tokens[nr_token].type = TK_REG; break;
+            tokens[nr_token].type = TK_EQ; break;
           case TK_NEQ:
-            tokens[nr_token].type = TK_REG; break;
+            tokens[nr_token].type = TK_NEQ; break;
           case TK_AND:
             tokens[nr_token].type = TK_AND; break;
           case TK_OR:
@@ -162,13 +164,11 @@ bool check_parentheses(word_t p, word_t q) {
     if(token_type == '(') count ++;
     if(token_type == ')') count --; 
     if(count < 0){
-      //panic("表达式求值出现错误：括号不匹配！！");
       return false;
     } 
   }
   
   if(count != 0) {
-    //panic("表达式求值出现错误：括号不匹配！");
     return false;
   }
   return true;
