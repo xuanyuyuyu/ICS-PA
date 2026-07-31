@@ -133,7 +133,7 @@ static bool make_token(char *e) {
           case '=':
             tokens[nr_token].type = TK_ASSIGN; break;
           default: 
-            panic("unhandled token type: %d", rules[i].token_type);
+            printf("unhandled token type: %d\n, 表达式求值错误", rules[i].token_type);
         }
         nr_token ++;
         break;
@@ -219,17 +219,19 @@ int position_of_main_operation(word_t p, word_t q) {
 }
 
 //p (((23)*((32+(36))-99))-42)*(94+95)
-word_t eval(word_t p, word_t q) {
+word_t eval(word_t p, word_t q, bool *success) {
   if(p > q) {
-    panic("表达式求值出现错误: p > q");
+    printf("表达式求值出现错误: 格式不正确!");
+    *success = false;
+    return 0;
   } else if (p == q) {
     return strtoul(tokens[p].str, NULL, 0);
   } else if (check_parentheses(p, q) == true) {
-    return eval(p + 1, q - 1);
+    return eval(p + 1, q - 1, success);
   } else {
     int op = position_of_main_operation(p, q);
-    word_t val1 = eval(p, op - 1);
-    word_t val2 = eval(op + 1, q);
+    word_t val1 = eval(p, op - 1, success);
+    word_t val2 = eval(op + 1, q, success);
     word_t op_type = tokens[op].type;
     switch (op_type) {
       case '+': return val1 + val2;
@@ -237,7 +239,11 @@ word_t eval(word_t p, word_t q) {
       case '*': return val1 * val2;
       case '/':
         {
-          if(val2 == 0) panic("表达式除零错误 ！");
+          if(val2 == 0) {
+            printf("表达式求值出现错误: 格式不正确!");
+            *success = false;
+            return 0;
+          }
           return val1 / val2;
         } 
       default: assert(0);
@@ -251,5 +257,10 @@ word_t expr(char *e, bool *success) {
     return 0;
   }
   *success = true;
-  return eval(0, nr_token-1);;
+  unsigned result = eval(0, nr_token-1, success);;
+  if(success) {
+    return result;
+  } else {
+    return 0;
+  }
 }

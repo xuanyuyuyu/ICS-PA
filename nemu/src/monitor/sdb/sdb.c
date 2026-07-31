@@ -108,7 +108,7 @@ static int cmd_p(char *args) {
     return -1;
   }
 
-  printf("result = %u" ,result);
+  printf("result = %u\n1" ,result);
   return 0;
 }
 
@@ -125,7 +125,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   
-  /* TODO: Add more commands */
+  
   { "si", "single step to execution", cmd_si },
   { "info", "show some info about reg or watchpointer", cmd_info},
   { "x", "show some value", cmd_x},
