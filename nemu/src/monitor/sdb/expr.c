@@ -13,6 +13,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include <isa.h>
 
 /* We use the POSIX regex functions to process regular expressions.
@@ -93,8 +94,8 @@ static bool make_token(char *e) {
         char *substr_start = e + position;
         int substr_len = pmatch.rm_eo;
 
-        Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
-            i, rules[i].regex, position, substr_len, substr_len, substr_start);
+        //Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
+        //   i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
         position += substr_len;
         //空格不保存到tokens数组
@@ -137,6 +138,7 @@ static bool make_token(char *e) {
             tokens[nr_token].type = TK_ASSIGN; break;
           default: 
             printf("unhandled token type: %d\n, 表达式求值错误", rules[i].token_type);
+            return false;
         }
         nr_token ++;
         break;
@@ -221,7 +223,7 @@ int position_of_main_operation(word_t p, word_t q) {
   return main_position;
 }
 
-//p (((23)*((32+(36))-99))-42)*(94+95)
+
 word_t eval(word_t p, word_t q, bool *success) {
   if(p > q) {
     printf("表达式求值出现错误: 格式不正确!");
@@ -233,8 +235,26 @@ word_t eval(word_t p, word_t q, bool *success) {
     return eval(p + 1, q - 1, success);
   } else {
     int op = position_of_main_operation(p, q);
-    word_t val1 = eval(p, op - 1, success);
-    word_t val2 = eval(op + 1, q, success);
+    if(op < 0) {
+      *success = false;
+      return 0;
+    }
+
+    word_t op_pos = (word_t)op;
+    if(op_pos <= p || op_pos >= q){
+      *success = false;
+      return 0;
+    }
+
+    word_t val1 = eval(p, op_pos - 1, success);
+    if (!*success) {
+      return 0;
+    }
+
+    word_t val2 = eval(op_pos + 1, q, success);
+    if (!*success) {
+      return 0;
+    }
     word_t op_type = tokens[op].type;
     switch (op_type) {
       case '+': return val1 + val2;
@@ -243,19 +263,20 @@ word_t eval(word_t p, word_t q, bool *success) {
       case '/':
         {
           if(val2 == 0) {
-            printf("表达式求值出现错误: 格式不正确!");
             *success = false;
             return 0;
           }
           return val1 / val2;
         } 
-      default: assert(0);
+      default: 
+        *success = false;
+        return 0;
     }
   }
 }
 
 word_t expr(char *e, bool *success) {
-  if (!make_token(e)) {
+  if (e == NULL || !make_token(e) || nr_token == 0) {
     *success = false;
     return 0;
   }
