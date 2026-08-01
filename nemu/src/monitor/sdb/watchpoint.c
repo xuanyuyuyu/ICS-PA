@@ -21,19 +21,19 @@
 
 
 #define NR_WP 32
-
+#define WP_EXPR_MAX 256
 struct watchpoint {
   int NO;
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
-  char *expr;
+  char expr[WP_EXPR_MAX];
   word_t old_value;
 
 };
 
 
-static WP wp_pool[NR_WP] = {};
+static WP wp_pool[] = {};
 static WP *head = NULL, *free_ = NULL;  //head用于组织使用中的监视点结构, free_用于组织空闲的监视点结构,
 
 void init_wp_pool() {
@@ -55,7 +55,13 @@ WP* new_wp(char *expression) {
   // 1.插入节点
   WP *ret = free_;
   free_ = free_->next;
-  ret->expr = expression;
+  //处理表达式
+  if (strlen(expression) >= WP_EXPR_MAX) {
+    printf("监视点表达式过长\n");
+    return NULL;
+  }
+  strcpy(ret->expr, expression);
+
   ret->next = head;
   head = ret;
 
@@ -71,7 +77,7 @@ WP* new_wp(char *expression) {
 }
 
 void free_wp(WP *wp) {
-  wp->expr = NULL;
+  wp->expr[0] = '\0';
   wp->old_value = 0;
 
   WP *p = free_->next;
