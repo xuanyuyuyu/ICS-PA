@@ -26,14 +26,13 @@ struct watchpoint {
   int NO;
   struct watchpoint *next;
 
-  /* TODO: Add more members if necessary */
   char expr[WP_EXPR_MAX];
   word_t old_value;
 
 };
 
 
-static WP wp_pool[] = {};
+static WP wp_pool[NR_WP] = {};
 static WP *head = NULL, *free_ = NULL;  //head用于组织使用中的监视点结构, free_用于组织空闲的监视点结构,
 
 void init_wp_pool() {
@@ -80,9 +79,8 @@ void free_wp(WP *wp) {
   wp->expr[0] = '\0';
   wp->old_value = 0;
 
-  WP *p = free_->next;
-  free_->next = wp;
-  wp->next = p;
+  wp->next = free_;  //直接指向头节点
+  free_ = wp;  //把自己变成头节点
 }
 
 void check_watchpoint() {
