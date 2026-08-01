@@ -56,6 +56,8 @@ WP* new_wp(char *expression) {
   WP *ret = free_;
   free_ = free_->next;
   ret->expr = expression;
+  ret->next = head;
+  head = ret;
 
   // 2.计算值
   bool success = false;
