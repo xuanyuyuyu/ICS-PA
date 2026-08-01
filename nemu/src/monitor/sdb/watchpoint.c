@@ -32,7 +32,7 @@ struct watchpoint {
 };
 
 
-static WP wp_pool[NR_WP] = {};
+static WP wp_pool[] = {};
 static WP *head = NULL, *free_ = NULL;  //head用于组织使用中的监视点结构, free_用于组织空闲的监视点结构,
 
 void init_wp_pool() {
