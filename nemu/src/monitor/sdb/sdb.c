@@ -18,10 +18,11 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <monitor/watchpoint.h>
+#include <stdio.h>
 #include "common.h"
 #include "sdb.h"
 #include "utils.h"
-
 
 static int is_batch_mode = false;
 
@@ -67,9 +68,11 @@ static int cmd_info(char *args) {
   /* extract the first argument */
   char *arg = strtok(NULL, " ");
   if(strcmp(arg, "r") == 0) {
+    //看寄存器
     isa_reg_display();
   } else if(strcmp(arg, "w") == 0) {
-    // TODO  看watchpointer
+    //看监视点
+    watchpoint_display();
   }
   return 0;
 }
@@ -117,7 +120,27 @@ static int cmd_p(char *args) {
   printf("result = %u\n" ,result);
   return 0;
 }
+static int cmd_w(char *args) {
+  if(args == NULL) {
+     printf("Usage: w EPR\n");
+    return 0;
+  }
+  new_wp(args);
 
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  if(args == NULL) {
+     printf("Usage: d\n");
+    return 0;
+  }
+  char *num = strtok(NULL, " ");
+  int no = strtoul(num, NULL, 0);
+  watchpoint_delete(no);
+
+  return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -135,7 +158,9 @@ static struct {
   { "si", "single step to execution", cmd_si },
   { "info", "show some info about reg or watchpointer", cmd_info},
   { "x", "show some value", cmd_x},
-  { "p", "calculate a expression", cmd_p}
+  { "p", "calculate a expression", cmd_p},
+  { "w", "watchpoint", cmd_w},
+  { "d", "delete a watchpoint", cmd_d}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
