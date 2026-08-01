@@ -195,6 +195,8 @@ void sdb_set_batch_mode() {
 void sdb_mainloop() {
   if (is_batch_mode) {
     cmd_c(NULL);
+    
+    printf("is_batch_mode=%d\n", is_batch_mode);
     return;
   }
 
