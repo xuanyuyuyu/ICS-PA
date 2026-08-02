@@ -42,21 +42,26 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   
 }
 
+/**
+*  exec_once() 先执行一条机器指令并更新 cpu.pc，
+*  再把“地址、机器码、汇编指令”拼接到 s->logbuf，
+*  供 ITRACE 打印和调试使用。
+*/
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
   isa_exec_once(s);
   cpu.pc = s->dnpc;
 #ifdef CONFIG_ITRACE
-  char *p = s->logbuf;
+  char *p = s->logbuf; 
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
-  int ilen = s->snpc - s->pc;
+  int ilen = s->snpc - s->pc;  //指令长度
   int i;
   uint8_t *inst = (uint8_t *)&s->isa.inst;
 #ifdef CONFIG_ISA_x86
   for (i = 0; i < ilen; i ++) {
 #else
-  for (i = ilen - 1; i >= 0; i --) {
+  for (i = ilen - 1; i >= 0; i --) {  //反向打印，小端
 #endif
     p += snprintf(p, 4, " %02x", inst[i]);
   }
@@ -73,13 +78,15 @@ static void exec_once(Decode *s, vaddr_t pc) {
 #endif
 }
 
+//若n是-1，被转换为无符号整数，是一个极大的数
 static void execute(uint64_t n) {
-  Decode s;
+  Decode s;  //创建一份指令译码信息，用来保存当前指令的内容
   for (;n > 0; n --) {
-    exec_once(&s, cpu.pc);
-    g_nr_guest_inst ++;
+  
+    exec_once(&s, cpu.pc);  //这里的cpu.pc表示从cpu.pc取指
+    g_nr_guest_inst ++;  //统计已执行指令数量
 
-    trace_and_difftest(&s, cpu.pc);
+    trace_and_difftest(&s, cpu.pc);  //s保存刚执行完的指令，cpu.pc代表下一条指令的地址
     check_watchpoint();
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
