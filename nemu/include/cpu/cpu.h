@@ -18,6 +18,15 @@
 
 #include <common.h>
 
+//环型缓冲区
+typedef struct {
+    vaddr_t pc;
+    char logbuf[128];
+
+} ITrace;
+
+
+
 void cpu_exec(uint64_t n);
 
 void set_nemu_state(int state, vaddr_t pc, int halt_ret);

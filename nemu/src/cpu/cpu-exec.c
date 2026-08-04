@@ -26,6 +26,11 @@
  */
 #define MAX_INST_TO_PRINT 10
 
+//定义环型缓冲区
+#define IRINGBUF_SIZE 32
+ITrace iringbuf[IRINGBUF_SIZE];
+size_t iringbuf_pos = 0;
+size_t iringbuf_count = 0;
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
@@ -42,6 +47,20 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   
 }
 
+static void iringbuf_push(Decode *s) {
+  iringbuf[iringbuf_pos].pc = s->pc;
+
+  strcpy(iringbuf[iringbuf_pos].logbuf, s->logbuf);
+
+  iringbuf_pos ++;
+
+  if(iringbuf_pos >= IRINGBUF_SIZE)
+    iringbuf_pos = 0;
+
+  if(iringbuf_count < IRINGBUF_SIZE) 
+    iringbuf_count ++;
+}
+
 /**
 *  exec_once() 先执行一条机器指令并更新 cpu.pc，
 *  再把“地址、机器码、汇编指令”拼接到 s->logbuf，
@@ -50,7 +69,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
+
   isa_exec_once(s);
+
   cpu.pc = s->dnpc;
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf; 
@@ -87,6 +108,9 @@ static void execute(uint64_t n) {
     g_nr_guest_inst ++;  //统计已执行指令数量
 
     trace_and_difftest(&s, cpu.pc);  //s保存刚执行完的指令，cpu.pc代表下一条指令的地址
+
+    iringbuf_push(&s);   //实现环型缓冲区
+
     check_watchpoint();
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
@@ -107,6 +131,22 @@ void assert_fail_msg() {
   statistic();
 }
 
+
+static void iringbuf_display(void) {
+  printf(" ------- instruction ring buffer -----\n");
+
+  size_t start = (iringbuf_count < IRINGBUF_SIZE)
+                   ? 0
+                   : iringbuf_pos;
+
+  for (size_t i = 0; i < iringbuf_count; i++) {
+    size_t index = (start + i) % IRINGBUF_SIZE;
+
+    printf("%s %s\n",
+           iringbuf[index].pc == nemu_state.halt_pc ? "-->" : "   ",
+           iringbuf[index].logbuf);
+  }
+}
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
@@ -127,6 +167,7 @@ void cpu_exec(uint64_t n) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
     case NEMU_END: case NEMU_ABORT:
+      iringbuf_display();
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
