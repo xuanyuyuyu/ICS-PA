@@ -18,6 +18,7 @@
 #include <cpu/cpu.h>
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
+#include <utils/ftrace.h>
 
 #define R(i) gpr(i)
 #define Mr vaddr_read
@@ -73,6 +74,11 @@ static word_t rem_signed(word_t src1, word_t src2) {
   return (word_t)(dividend % divisor);
 }
 
+static inline bool is_link_reg(int reg) {
+  return reg == 1 || reg == 5;
+}
+
+
 static int decode_exec(Decode *s) {
   s->dnpc = s->snpc;
 
@@ -89,8 +95,37 @@ static int decode_exec(Decode *s) {
   /* Upper immediates and control transfer. */
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
-  INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, { R(rd) = s->snpc; s->dnpc = s->pc + imm; });
-  INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, { word_t target = (src1 + imm) & ~1u; R(rd) = s->snpc; s->dnpc = target; });
+  INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J,
+        {
+          vaddr_t target = s->pc + imm;
+          #ifdef CONFIG_FTRACE
+            if(is_link_reg(rd)) {
+              ftrace_call(s->pc, target);
+            }
+          #endif
+
+          R(rd) = s->pc + 4;
+          s->dnpc = target;
+        }
+        
+    );
+  
+  INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, 
+      { 
+        vaddr_t target = src1 + imm;
+        #ifdef CONFIG_FTRACE
+          if(rd == 0 && is_link_reg(src1) && imm == 0) {
+            ftrace_ret(s->pc, target);
+          } else if(is_link_reg(rd)) {
+            //保存了返回地址，是间接函数调用
+            ftrace_call(s->pc, target);
+          }  
+        #endif
+
+        R(rd) = s->pc + 4;
+        s->dnpc = target;
+      }
+  );
 
   /* Conditional branches. */
   INSTPAT("??????? ????? ????? 000 ????? 11000 11", beq    , B, if (src1 == src2) s->dnpc = s->pc + imm);

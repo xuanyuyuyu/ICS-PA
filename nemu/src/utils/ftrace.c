@@ -1,3 +1,5 @@
+#include "debug.h"
+#include "utils.h"
 #include <common.h>
 #include <elf.h>
 #include <utils/ftrace.h>
@@ -15,6 +17,18 @@ static size_t nr_functions = 0;
 
 //保存整个ELF字符串表
 static char *string_table = NULL;
+
+
+#define FTRACE_STACK_SIZE 1024
+typedef struct {
+    const char *name;
+    vaddr_t target;
+    vaddr_t return_addr;
+} FtraceFrame;
+
+
+static FtraceFrame call_stack[FTRACE_STACK_SIZE];
+static size_t call_depth = 0;
 
 
 static void read_at(FILE *fp, long offset, void *buf, size_t size) {
@@ -201,23 +215,30 @@ void init_ftrace(const char *elf_file) {
     Log("ftrace: loaded %zu functions from '%s'", nr_functions, elf_file);
 
 
-    /*
-    * 调试阶段先打印所有函数，
-    * 确认解析结果与 readelf -s 一致。
-    */
-    for (size_t i = 0; i < nr_functions; i++) {
-        printf(
-            "ftrace function: "
-            "%-24s start = " FMT_WORD
-            ", size = %u\n",
-            functions[i].name,
-            functions[i].start,
-            functions[i].size
-        );
-    }
+    // /*
+    // * 调试阶段先打印所有函数，
+    // * 确认解析结果与 readelf -s 一致。
+    // */
+    // for (size_t i = 0; i < nr_functions; i++) {
+    //     printf(
+    //         "ftrace function: "
+    //         "%-24s start = " FMT_WORD
+    //         ", size = %u\n",
+    //         functions[i].name,
+    //         functions[i].start,
+    //         functions[i].size
+    //     );
+    // }
 }
 
 const char *ftrace_find_function(vaddr_t addr) {
+    
+    // 先匹配函数入口
+    for (size_t i = 0; i < nr_functions; i++) {
+        if (addr == functions[i].start) {
+            return functions[i].name;
+        }
+    }
 
     for(size_t i = 0; i < nr_functions; i ++) {
         vaddr_t start = functions[i].start;
@@ -230,3 +251,47 @@ const char *ftrace_find_function(vaddr_t addr) {
     return NULL;
 }
 
+void ftrace_call(vaddr_t pc, vaddr_t target) {
+    const char *name = ftrace_find_function(pc);
+
+    log_write(
+        FMT_WORD ": %*scall [%s@" FMT_WORD "]\n",
+        pc,
+        (int)call_depth * 2,
+        "",
+        name != NULL ? name : "???",
+        target
+    );;
+
+    Assert(call_depth < FTRACE_STACK_SIZE, "ftrace: call stack overflow");
+
+    call_stack[call_depth].name = name != NULL ? name : "???";
+    call_stack[call_depth].return_addr = pc + 4;
+    call_stack[call_depth].target = target;
+
+    call_depth ++;
+}
+
+void ftrace_ret(vaddr_t pc, vaddr_t target) {
+
+    if(call_depth == 0) {
+        log_write(
+            FMT_WORD ": ret to " FMT_WORD " (empty ftrace stack)\n", pc, target
+        );
+        return;
+    }
+
+    call_depth --;
+
+    FtraceFrame *frame = &call_stack[call_depth];
+
+    log_write(
+        FMT_WORD ": %*sret  [%s]\n",
+        pc,
+        (int)call_depth * 2,
+        "",
+        frame->name
+    );
+
+
+}
