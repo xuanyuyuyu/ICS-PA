@@ -156,6 +156,11 @@ config MTRACE
   bool "Enable memory tracer"
   default n
 
+config FTRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER && ISA_riscv
+  bool "Enable function tracer"
+  default n
+
 config MTRACE_COND
   depends on MTRACE
   string "Only trace memory accesses when the condition is true"
