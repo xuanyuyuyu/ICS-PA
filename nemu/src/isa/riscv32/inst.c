@@ -112,9 +112,10 @@ static int decode_exec(Decode *s) {
   
   INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, 
       { 
-        vaddr_t target = src1 + imm;
+        vaddr_t target = (src1 + imm) & ~1u;;
         #ifdef CONFIG_FTRACE
-          if(rd == 0 && is_link_reg(src1) && imm == 0) {
+          int rs1_idx = BITS(s->isa.inst, 19, 15);
+          if(rd == 0 && is_link_reg(rs1_idx) && imm == 0) {
             ftrace_ret(s->pc, target);
           } else if(is_link_reg(rd)) {
             //保存了返回地址，是间接函数调用

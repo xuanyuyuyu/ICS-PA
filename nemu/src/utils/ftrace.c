@@ -252,7 +252,7 @@ const char *ftrace_find_function(vaddr_t addr) {
 }
 
 void ftrace_call(vaddr_t pc, vaddr_t target) {
-    const char *name = ftrace_find_function(pc);
+    const char *name = ftrace_find_function(target);
 
     log_write(
         FMT_WORD ": %*scall [%s@" FMT_WORD "]\n",
