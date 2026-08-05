@@ -166,7 +166,15 @@ void cpu_exec(uint64_t n) {
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
-    case NEMU_END: case NEMU_ABORT:
+    case NEMU_END: 
+      Log("nemu: %s at pc = " FMT_WORD,
+          (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
+           (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
+            ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
+          nemu_state.halt_pc);
+      break;
+    
+    case NEMU_ABORT:
       iringbuf_display();
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
