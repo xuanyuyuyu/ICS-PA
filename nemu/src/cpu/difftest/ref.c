@@ -13,17 +13,25 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include "common.h"
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <difftest-def.h>
 #include <memory/paddr.h>
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  assert(0);
+  if(direction == DIFFTEST_TO_DUT) {
+    memcpy(buf, guest_to_host(addr), n);
+  } else if(direction == DIFFTEST_TO_REF) {
+    memcpy(guest_to_host(addr), buf, n);
+  }
 }
 
 __EXPORT void difftest_regcpy(void *dut, bool direction) {
-  assert(0);
+  
+
+
+
 }
 
 __EXPORT void difftest_exec(uint64_t n) {
