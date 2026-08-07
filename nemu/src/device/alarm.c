@@ -27,7 +27,7 @@ void add_alarm_handle(alarm_handler_t h) {
   assert(idx < MAX_HANDLER);
   handler[idx ++] = h;
 }
-
+// 定时器 --> 通知列表
 static void alarm_sig_handler(int signum) {
   int i;
   for (i = 0; i < idx; i ++) {
@@ -42,10 +42,14 @@ void init_alarm() {
   int ret = sigaction(SIGVTALRM, &s, NULL);
   Assert(ret == 0, "Can not set signal handler");
 
+  //创建定时器
   struct itimerval it = {};
+  //第一次触发时间
   it.it_value.tv_sec = 0;
   it.it_value.tv_usec = 1000000 / TIMER_HZ;
+
   it.it_interval = it.it_value;
+  //ITIMER_VIRTUAL  按进程实际运行在用户态的 CPU 时间计时。
   ret = setitimer(ITIMER_VIRTUAL, &it, NULL);
   Assert(ret == 0, "Can not set timer");
 }
