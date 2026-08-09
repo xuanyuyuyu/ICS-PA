@@ -116,7 +116,6 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         int value = va_arg(ap, int);
         int negative = value < 0;
         if(negative) {
-          *out ++ = '-';
           magnitude = 0u - (unsigned int)value;
         } else {
           magnitude = (unsigned int)value;
