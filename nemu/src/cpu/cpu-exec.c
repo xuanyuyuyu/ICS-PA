@@ -26,11 +26,13 @@
  */
 #define MAX_INST_TO_PRINT 10
 
+#ifdef CONFIG_ITRACE
 //定义环型缓冲区
 #define IRINGBUF_SIZE 32
-ITrace iringbuf[IRINGBUF_SIZE];
-size_t iringbuf_pos = 0;
-size_t iringbuf_count = 0;
+static ITrace iringbuf[IRINGBUF_SIZE];
+static size_t iringbuf_pos = 0;
+static size_t iringbuf_count = 0;
+#endif
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
@@ -47,6 +49,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   
 }
 
+#ifdef CONFIG_ITRACE
 static void iringbuf_push(Decode *s) {
   iringbuf[iringbuf_pos].pc = s->pc;
 
@@ -60,6 +63,7 @@ static void iringbuf_push(Decode *s) {
   if(iringbuf_count < IRINGBUF_SIZE) 
     iringbuf_count ++;
 }
+#endif
 
 /**
 *  exec_once() 先执行一条机器指令并更新 cpu.pc，
@@ -109,7 +113,9 @@ static void execute(uint64_t n) {
 
     trace_and_difftest(&s, cpu.pc);  //s保存刚执行完的指令，cpu.pc代表下一条指令的地址
 
+#ifdef CONFIG_ITRACE
     iringbuf_push(&s);   //实现环型缓冲区
+#endif
 
     check_watchpoint();
     if (nemu_state.state != NEMU_RUNNING) break;
@@ -132,6 +138,7 @@ void assert_fail_msg() {
 }
 
 
+#ifdef CONFIG_ITRACE
 static void iringbuf_display(void) {
   printf(" ------- instruction ring buffer -----\n");
 
@@ -147,6 +154,7 @@ static void iringbuf_display(void) {
            iringbuf[index].logbuf);
   }
 }
+#endif
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
@@ -175,7 +183,9 @@ void cpu_exec(uint64_t n) {
       break;
     
     case NEMU_ABORT:
+#ifdef CONFIG_ITRACE
       iringbuf_display();
+#endif
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
