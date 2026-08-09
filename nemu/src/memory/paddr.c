@@ -73,6 +73,7 @@ word_t paddr_read(paddr_t addr, int len) {
   } else {
     #ifdef CONFIG_DEVICE
       data = mmio_read(addr, len);
+      
     #else 
       out_of_bound(addr);
       return 0;
