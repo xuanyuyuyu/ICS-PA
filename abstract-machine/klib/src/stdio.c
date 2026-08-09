@@ -84,17 +84,17 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         } else {
           magnitude = (unsigned int)value;
         }
-        append_uint(out, magnitude, 10);
+        out += append_uint(out, magnitude, 10);
         break;
       }
       case 'u': {
         unsigned int value = va_arg(ap, unsigned int);
-        append_uint(out, value, 10);
+        out += append_uint(out, value, 10);
         break;
       }
       case 'x': {
         unsigned int value = va_arg(ap, unsigned int);
-        append_uint(out, value, 16);
+        out += append_uint(out, value, 16);
         break;
       }
       default:
