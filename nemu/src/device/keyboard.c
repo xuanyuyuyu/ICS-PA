@@ -45,16 +45,19 @@ static void init_keymap() {
   MAP(NEMU_KEYS, SDL_KEYMAP)
 }
 
+
 #define KEY_QUEUE_LEN 1024
 static int key_queue[KEY_QUEUE_LEN] = {};
-static int key_f = 0, key_r = 0;
+static int key_f = 0, key_r = 0;  //f队头，r队尾
 
+//把一次键盘事件（按下/释放 + 键值）加入键盘环形队列。
 static void key_enqueue(uint32_t am_scancode) {
   key_queue[key_r] = am_scancode;
   key_r = (key_r + 1) % KEY_QUEUE_LEN;
   Assert(key_r != key_f, "key queue overflow!");
 }
 
+//从键盘环形队列中取出最早进入的一个键盘事件，没有事件则返回 NEMU_KEY_NONE。
 static uint32_t key_dequeue() {
   uint32_t key = NEMU_KEY_NONE;
   if (key_f != key_r) {
@@ -64,6 +67,7 @@ static uint32_t key_dequeue() {
   return key;
 }
 
+//把 SDL 获得的真实键盘事件转换成 NEMU 键盘编码，然后放入键盘队列。
 void send_key(uint8_t scancode, bool is_keydown) {
   if (nemu_state.state == NEMU_RUNNING && keymap[scancode] != NEMU_KEY_NONE) {
     uint32_t am_scancode = keymap[scancode] | (is_keydown ? KEYDOWN_MASK : 0);
@@ -82,12 +86,14 @@ static uint32_t key_dequeue() {
 
 static uint32_t *i8042_data_port_base = NULL;
 
+//模拟 x86 i8042 键盘控制器的数据端口，当 CPU 读取键盘端口时返回一个键值。
 static void i8042_data_io_handler(uint32_t offset, int len, bool is_write) {
   assert(!is_write);
   assert(offset == 0);
   i8042_data_port_base[0] = key_dequeue();
 }
 
+//初始化键盘设备，把键盘数据端口注册到 NEMU 的 IO 地址空间中。
 void init_i8042() {
   i8042_data_port_base = (uint32_t *)new_space(4);
   i8042_data_port_base[0] = NEMU_KEY_NONE;
