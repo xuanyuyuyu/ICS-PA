@@ -1,6 +1,7 @@
 #include <am.h>
 #include <klib.h>
 #include <klib-macros.h>
+#include <stdint.h>
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 static unsigned long int next = 1;
@@ -29,14 +30,31 @@ int atoi(const char* nptr) {
   return x;
 }
 
+static uintptr_t addr;
+static bool initialized = false;
+
 void *malloc(size_t size) {
-  // On native, malloc() will be called during initializaion of C runtime.
-  // Therefore do not call panic() here, else it will yield a dead recursion:
-  //   panic() -> putchar() -> (glibc) -> malloc() -> panic()
-#if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
-  panic("Not implemented");
-#endif
-  return NULL;
+  if(!initialized) {
+    addr = ROUNDUP(heap.start, 8);  //8字节向上对齐
+    initialized = true;
+  }
+
+  //malloc(0)也返回一块可区分的最小空间
+  if(size == 0) {
+    size = 1;
+  }
+
+  size_t aligned_size = ROUNDUP(size, 8);
+  uintptr_t heap_end = (uintptr_t)heap.end;
+  
+  //先用减法判断，避免addr + aligned_size整数溢出
+  assert(addr <= heap_end);
+  assert(aligned_size <= heap_end - addr);
+
+  void *result = (void *)addr;
+  addr += aligned_size;
+
+  return result;
 }
 
 void free(void *ptr) {
