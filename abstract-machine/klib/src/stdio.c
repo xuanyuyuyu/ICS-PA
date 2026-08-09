@@ -7,22 +7,45 @@
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
 
-int append_uint(char *out, unsigned int value, unsigned int base) {
-  char *start = out;
+static int append_uint(char *out, unsigned int value, unsigned int base, int width, char pad, bool negative) {
+
   char digits[] = "0123456789ABCDEF";
   char temp[32];
   int len = 0;
+  int written = 0;
 
+  //逆序保存数字
   do {
     temp[len ++] = digits[value % base]; 
     value /= base;
   } while(value);
 
-  while(len --) {
-    *out ++ = temp[len];
+  //总长度需要包含负号
+  int total_len = len + (negative ? 1 : 0);
+  int padding = width > total_len ? width - total_len : 0;
+  
+  //空格补齐应该放在负号前面
+  if(pad == ' ') {
+    while(padding -- > 0) {
+      out[written ++] = ' ';
+    }
+  }
+  //输出符号
+  if(negative) {
+    out[written ++] = '-';
+  }
+  //补0应该放在负号后
+  if(pad == '0') {
+    while(padding -- > 0) {
+      out[written ++] = '0';
+    }
   }
 
-  return out - start;
+  //把数字正序写入out
+  while(len) {
+    out[written++] = temp[--len];
+  }
+  return written;
 }
 
 int printf(const char *fmt, ...) {
@@ -49,14 +72,27 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
     }
     //此时遇到%
     fmt ++;  //跳过%
+    
+    char pad = ' ';
+    int width = 0;
 
+    //解析前导0
+    if(*fmt == '0') {
+      pad = '0';
+      fmt ++;
+    }
+    //解析宽度
+    while(*fmt >= '0' && *fmt <= '9') {
+      width = width * 10 + (*fmt - '0');
+      fmt ++;
+    }
     //处理结尾处单独出现的 %
     if(*fmt == '\0') {
       *out ++ = '%';
       break;
     }
-    
-    switch(*fmt ++) {
+    char spec = *fmt ++;
+    switch(spec) {
       case '%':
         *out++ = '%';
         break;
@@ -78,23 +114,24 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
       case 'd': {
         unsigned int magnitude;
         int value = va_arg(ap, int);
-        if(value < 0) {
+        int negative = value < 0;
+        if(negative) {
           *out ++ = '-';
           magnitude = 0u - (unsigned int)value;
         } else {
           magnitude = (unsigned int)value;
         }
-        out += append_uint(out, magnitude, 10);
+        out += append_uint(out, magnitude, 10, width, pad, negative);
         break;
       }
       case 'u': {
         unsigned int value = va_arg(ap, unsigned int);
-        out += append_uint(out, value, 10);
+        out += append_uint(out, value, 10, width, pad, false);
         break;
       }
       case 'x': {
         unsigned int value = va_arg(ap, unsigned int);
-        out += append_uint(out, value, 16);
+        out += append_uint(out, value, 16, width, pad, false);
         break;
       }
       default:
