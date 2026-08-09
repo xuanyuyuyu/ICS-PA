@@ -9,7 +9,7 @@
 
 static int append_uint(char *out, unsigned int value, unsigned int base, int width, char pad, bool negative) {
 
-  char digits[] = "0123456789ABCDEF";
+  const char digits[] = "0123456789abcdef";
   char temp[32];
   int len = 0;
   int written = 0;
