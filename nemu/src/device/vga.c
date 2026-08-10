@@ -59,7 +59,7 @@ static void init_screen() {
 
 //gpu扫描输出
 static inline void update_screen() {
-  printf("成功update_screen\n");
+  //printf("成功update_screen\n");
 
   SDL_UpdateTexture(texture, NULL, vmem, SCREEN_W * sizeof(uint32_t));  //用 vmem 的数据更新 texture。
   SDL_RenderClear(renderer);  //把上一帧擦掉
@@ -76,7 +76,7 @@ static inline void update_screen() {
 #endif
 
 void vga_update_screen() {
-  printf("成功vga_update_screen\n");
+  //printf("成功vga_update_screen\n");
   if(vgactl_port_base[1] != 0) {
 #ifdef CONFIG_VGA_SHOW_SCREEN
     update_screen();
