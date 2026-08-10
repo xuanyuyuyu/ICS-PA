@@ -31,15 +31,15 @@ static uint32_t screen_size() {
   return screen_width() * screen_height() * sizeof(uint32_t);
 }
 
-static void *vmem = NULL;
-static uint32_t *vgactl_port_base = NULL;
+static void *vmem = NULL;  //显存
+static uint32_t *vgactl_port_base = NULL;  //显卡寄存器。
 
 #ifdef CONFIG_VGA_SHOW_SCREEN
 #ifndef CONFIG_TARGET_AM
 #include <SDL2/SDL.h>
 
-static SDL_Renderer *renderer = NULL;
-static SDL_Texture *texture = NULL;
+static SDL_Renderer *renderer = NULL;  //renderer 是负责把“准备好的图片”画到窗口上的东西。
+static SDL_Texture *texture = NULL;  //显示器准备显示的图片
 
 static void init_screen() {
   SDL_Window *window = NULL;
@@ -52,15 +52,16 @@ static void init_screen() {
       0, &window, &renderer);
   SDL_SetWindowTitle(window, title);
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-      SDL_TEXTUREACCESS_STATIC, SCREEN_W, SCREEN_H);
+      SDL_TEXTUREACCESS_STATIC, SCREEN_W, SCREEN_H);  //表示一张GPU可以显示的图片
   SDL_RenderPresent(renderer);
 }
 
+//gpu扫描输出
 static inline void update_screen() {
-  SDL_UpdateTexture(texture, NULL, vmem, SCREEN_W * sizeof(uint32_t));
-  SDL_RenderClear(renderer);
-  SDL_RenderCopy(renderer, texture, NULL, NULL);
-  SDL_RenderPresent(renderer);
+  SDL_UpdateTexture(texture, NULL, vmem, SCREEN_W * sizeof(uint32_t));  //用 vmem 的数据更新 texture。
+  SDL_RenderClear(renderer);  //把上一帧擦掉
+  SDL_RenderCopy(renderer, texture, NULL, NULL);  //把 texture 放到 renderer 上。
+  SDL_RenderPresent(renderer);  //真正显示到屏幕
 }
 #else
 static void init_screen() {}
@@ -72,8 +73,12 @@ static inline void update_screen() {
 #endif
 
 void vga_update_screen() {
-  // TODO: call `update_screen()` when the sync register is non-zero,
-  // then zero out the sync register
+  if(vgactl_port_base[1] != 0) {
+#ifdef CONFIG_VGA_SHOW_SCREEN
+    update_screen();
+#endif
+    vgactl_port_base[1] = 0;
+  }
 }
 
 void init_vga() {
