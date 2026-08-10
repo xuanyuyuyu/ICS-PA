@@ -47,7 +47,6 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
       fb[dst] = pixels[src];
     }
   }
-  printf("fb[0]=%x\n", fb[0]);
   if (ctl->sync) {
     outl(SYNC_ADDR, 1);
   }
