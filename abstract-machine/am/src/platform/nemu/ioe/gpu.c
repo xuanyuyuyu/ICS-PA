@@ -23,7 +23,7 @@ void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
 }
 
 void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
-  printf("成功进入__am_gpu_fbdraw\n");
+  // printf("成功进入__am_gpu_fbdraw\n");
 
   
   uint32_t config = inl(VGACTL_ADDR);
@@ -51,14 +51,14 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
   if (ctl->sync) {
     outl(SYNC_ADDR, 1);
   }
-  printf(
-  "draw x=%d y=%d w=%d h=%d first=%x\n",
-  ctl->x,
-  ctl->y,
-  ctl->w,
-  ctl->h,
-  pixels[0]
-  );
+  // printf(
+  // "draw x=%d y=%d w=%d h=%d first=%x\n",
+  // ctl->x,
+  // ctl->y,
+  // ctl->w,
+  // ctl->h,
+  // pixels[0]
+  // );
 
 
 }
