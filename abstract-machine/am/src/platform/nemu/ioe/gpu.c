@@ -10,7 +10,7 @@ void __am_gpu_init() {
 }
 
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
-  printf("成功进入__am_gpu_config\n");
+  //printf("成功进入__am_gpu_config\n");
   uint32_t config = inl(VGACTL_ADDR);
   int width = config >> 16;
   int height = config & 0xffff;
