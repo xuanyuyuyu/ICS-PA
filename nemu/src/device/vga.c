@@ -42,7 +42,7 @@ static SDL_Renderer *renderer = NULL;  //renderer 是负责把“准备好的图
 static SDL_Texture *texture = NULL;  //显示器准备显示的图片
 
 static void init_screen() {
-  printf("成功init_screen\n");
+  //printf("成功init_screen\n");
   SDL_Window *window = NULL;
   char title[128];
   sprintf(title, "%s-NEMU", str(__GUEST_ISA__));
