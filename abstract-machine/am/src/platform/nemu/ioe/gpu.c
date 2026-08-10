@@ -10,6 +10,7 @@ void __am_gpu_init() {
 }
 
 void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
+  printf("成功进入__am_gpu_config\n");
   uint32_t config = inl(VGACTL_ADDR);
   int width = config >> 16;
   int height = config & 0xffff;
@@ -22,6 +23,7 @@ void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
 }
 
 void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
+  printf("成功进入__am_gpu_fbdraw\n");
   uint32_t config = inl(VGACTL_ADDR);
   int screen_w = config >> 16;
   int screen_h = config & 0xffff;
@@ -46,6 +48,7 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
   if (ctl->sync) {
     outl(SYNC_ADDR, 1);
   }
+
 
 }
 

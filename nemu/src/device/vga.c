@@ -42,6 +42,7 @@ static SDL_Renderer *renderer = NULL;  //renderer 是负责把“准备好的图
 static SDL_Texture *texture = NULL;  //显示器准备显示的图片
 
 static void init_screen() {
+  printf("成功init_screen\n");
   SDL_Window *window = NULL;
   char title[128];
   sprintf(title, "%s-NEMU", str(__GUEST_ISA__));
@@ -58,6 +59,8 @@ static void init_screen() {
 
 //gpu扫描输出
 static inline void update_screen() {
+  printf("成功update_screen\n");
+
   SDL_UpdateTexture(texture, NULL, vmem, SCREEN_W * sizeof(uint32_t));  //用 vmem 的数据更新 texture。
   SDL_RenderClear(renderer);  //把上一帧擦掉
   SDL_RenderCopy(renderer, texture, NULL, NULL);  //把 texture 放到 renderer 上。
@@ -73,6 +76,7 @@ static inline void update_screen() {
 #endif
 
 void vga_update_screen() {
+  printf("成功vga_update_screen\n");
   if(vgactl_port_base[1] != 0) {
 #ifdef CONFIG_VGA_SHOW_SCREEN
     update_screen();
@@ -82,6 +86,7 @@ void vga_update_screen() {
 }
 
 void init_vga() {
+   printf("成功init_vga\n");
   vgactl_port_base = (uint32_t *)new_space(8);
   vgactl_port_base[0] = (screen_width() << 16) | screen_height();
 #ifdef CONFIG_HAS_PORT_IO
