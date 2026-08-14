@@ -51,7 +51,7 @@ static int append_uint(char *out, unsigned int value, unsigned int base, int wid
 int printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  char out[1024];
+  char out[2048];
   int ret = vsprintf(out, fmt, ap);
   va_end(ap);
 

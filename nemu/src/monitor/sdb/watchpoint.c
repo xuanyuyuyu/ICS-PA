@@ -48,30 +48,35 @@ void init_wp_pool() {
 
 
 WP* new_wp(char *expression) {
-  if(free_ == NULL) {
-    panic("监视点链表不够用了");
+  if (expression == NULL) {
+    printf("监视点表达式不能为空\n");
+    return NULL;
   }
-  // 1.插入节点
-  WP *ret = free_;
-  free_ = free_->next;
-  //处理表达式
+
   if (strlen(expression) >= WP_EXPR_MAX) {
     printf("监视点表达式过长\n");
     return NULL;
   }
-  strcpy(ret->expr, expression);
 
-  ret->next = head;
-  head = ret;
-
-  // 2.计算值
   bool success = false;
-
-  ret->old_value = expr(expression, &success);
-  if(!success) {
+  word_t initial_value = expr(expression, &success);
+  if (!success) {
     printf("表达式求值失败!\n");
     return NULL;
   }
+
+  if (free_ == NULL) {
+    panic("监视点链表不够用了");
+  }
+
+  WP *ret = free_;
+  free_ = free_->next;
+
+  strcpy(ret->expr, expression);
+  ret->old_value = initial_value;
+  ret->next = head;
+  head = ret;
+
   return ret;
 }
 
