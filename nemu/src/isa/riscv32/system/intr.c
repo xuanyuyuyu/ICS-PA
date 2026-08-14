@@ -25,6 +25,16 @@
 * 这个函数就是保存异常信息，返回异常处理程序入口
 */
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
+  
+#ifdef CONFIG_ETRACE
+  log_write(
+    "ETRACE: pc=" FMT_WORD
+    " cause=" FMT_WORD
+    " handler=" FMT_WORD "\n",
+    epc, NO, cpu.mtvec
+  );
+#endif
+
   cpu.mepc = epc;
   cpu.mcause = NO;
   return cpu.mtvec;
