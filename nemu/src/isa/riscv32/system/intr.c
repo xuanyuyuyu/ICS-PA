@@ -15,12 +15,19 @@
 
 #include <isa.h>
 
+/**
+* NO：异常原因编号
+* epc：发生异常时的指令地址
+* mepc：保存异常返回地址
+* mcause： 保存异常原因
+* mtvec：保存异常处理程序入口
+*
+* 这个函数就是保存异常信息，返回异常处理程序入口
+*/
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
-  /* TODO: Trigger an interrupt/exception with ``NO''.
-   * Then return the address of the interrupt/exception vector.
-   */
-
-  return 0;
+  cpu.mepc = epc;
+  cpu.mcause = NO;
+  return cpu.mtvec;
 }
 
 word_t isa_query_intr() {

@@ -8,8 +8,11 @@
 #endif
 
 struct Context {
-  // TODO: fix the order of these members to match trap.S
-  uintptr_t mepc, mcause, gpr[NR_REGS], mstatus;
+  uintptr_t gpr[NR_REGS];
+  uintptr_t mcause;  //异常类型编号
+  uintptr_t mstatus;  //机器状态寄存器
+  uintptr_t mepc;  //硬件自动填入触发异常那一条指令的 PC 地址。
+
   void *pdir;
 };
 

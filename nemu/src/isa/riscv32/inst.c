@@ -29,7 +29,8 @@ enum {
   TYPE_N, // none
   TYPE_J,
   TYPE_B,
-  TYPE_R
+  TYPE_R,
+  TYPE_CSR
 };
 
 #define src1R() do { *src1 = R(rs1); } while (0)
@@ -52,6 +53,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
     case TYPE_J:                   immJ(); break;
     case TYPE_B: src1R(); src2R(); immB(); break;
     case TYPE_R: src1R(); src2R();         break;
+    case TYPE_CSR: src1R(); *imm = BITS(i, 31, 20); break;
     default: panic("unsupported type = %d", type);
   }
 }
@@ -77,6 +79,29 @@ static word_t rem_signed(word_t src1, word_t src2) {
 static inline bool is_link_reg(int reg) {
   return reg == 1 || reg == 5;
 }
+
+static word_t csr_read(uint32_t csr) {
+  switch (csr) {
+   case 0x300: return cpu.mstatus; break;
+   case 0x305: return cpu.mtvec; break;
+   case 0x341: return cpu.mepc; break;
+   case 0x342: return cpu.mcause; break;
+   default:
+    panic("Unsupported CSR: 0x%x", csr);
+  }
+}
+
+static void csr_write(uint32_t csr, word_t value) {
+  switch (csr) {
+    case 0x300: cpu.mstatus = value; break;
+    case 0x305: cpu.mtvec = value; break;
+    case 0x341: cpu.mepc = value; break;
+    case 0x342: cpu.mcause = value; break;
+    default:
+    panic("Unsupported CSR: 0x%x", csr);
+  }
+}
+
 
 
 static int decode_exec(Decode *s) {
@@ -179,7 +204,29 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem    , R, R(rd) = rem_signed(src1, src2));
   INSTPAT("0000001 ????? ????? 111 ????? 01100 11", remu   , R, R(rd) = src2 == 0 ? src1 : src1 % src2);
 
-  INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, NEMUTRAP(s->pc, R(10)));
+  INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10)));
+  
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , CSR, {
+      word_t old = csr_read(imm);
+      csr_write(imm, src1);
+      R(rd) = old;
+  });
+
+  INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , CSR, {
+      word_t old = csr_read(imm);
+      if(BITS(s->isa.inst, 19, 15) != 0) {
+        csr_write(imm, old | src1);
+      }
+      R(rd) = old;
+  });
+
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall, N, {
+      s->dnpc = isa_raise_intr(11, s->pc);
+  });
+
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret, N, {
+      s->dnpc = cpu.mepc;
+  });
 
   /* Catch-all must stay last. */
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
