@@ -132,12 +132,6 @@ static void statistic() {
   else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
 }
 
-void assert_fail_msg() {
-  isa_reg_display();
-  statistic();
-}
-
-
 #ifdef CONFIG_ITRACE
 static void iringbuf_display(void) {
   printf(" ------- instruction ring buffer -----\n");
@@ -155,6 +149,16 @@ static void iringbuf_display(void) {
   }
 }
 #endif
+void assert_fail_msg() {
+#ifdef CONFIG_ITRACE
+  iringbuf_display();
+#endif
+  isa_reg_display();
+  statistic();
+}
+
+
+
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
   g_print_step = (n < MAX_INST_TO_PRINT);
