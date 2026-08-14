@@ -2,6 +2,7 @@
 #include "utils.h"
 #include <common.h>
 #include <elf.h>
+#include <stddef.h>
 #include <utils/ftrace.h>
 
 typedef struct {
@@ -294,4 +295,21 @@ void ftrace_ret(vaddr_t pc, vaddr_t target) {
     );
 
 
+}
+
+void ftrace_print_stack(void) {
+    printf("FTRACE call stack: depth = %zu\n", call_depth);
+
+    for(size_t i = call_depth; i > 0; i --) {
+        FtraceFrame *frame = &call_stack[i - 1];
+
+        printf(
+            "  #%zu %s target=" FMT_WORD
+            " return=" FMT_WORD "\n",
+            call_depth - i,
+            frame->name,
+            frame->target,
+            frame->return_addr
+        );
+    }
 }

@@ -23,6 +23,8 @@
 #include "common.h"
 #include "sdb.h"
 #include "utils.h"
+#include <utils/ftrace.h>
+
 
 static int is_batch_mode = false;
 
@@ -142,6 +144,16 @@ static int cmd_d(char *args) {
   return 0;
 }
 
+static int cmd_bt(char *args) {
+  (void)args;
+#ifdef CONFIG_FTRACE
+  ftrace_print_stack();
+#else
+  printf("FTRACE is not enabled\n");
+#endif
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -160,7 +172,8 @@ static struct {
   { "x", "show some value", cmd_x},
   { "p", "calculate a expression", cmd_p},
   { "w", "watchpoint", cmd_w},
-  { "d", "delete a watchpoint", cmd_d}
+  { "d", "delete a watchpoint", cmd_d},
+  { "bt", "Display function call stack", cmd_bt}
 };
 
 #define NR_CMD ARRLEN(cmd_table)
