@@ -16,6 +16,15 @@
 #define _arg4(a0, a1, a2, a3, a4, ...) a4
 #define _arg5(a0, a1, a2, a3, a4, a5, ...) a5
 
+
+/*
+GPR1 → 系统调用号
+GPR2 → 参数1
+GPR3 → 参数2
+GPR4 → 参数3
+GPRx → 返回值
+*/
+
 // extract an argument from the macro array
 #define SYSCALL  _args(0, ARGS_ARRAY)
 #define GPR1 _args(1, ARGS_ARRAY)
