@@ -73,21 +73,24 @@ void do_syscall(Context *c) {
       break;
 
     case SYS_write: {
-      int fd = (int)a[1];
-      const char *buf = (const char *)a[2];
-      size_t len = (size_t)a[3];
+        int fd = (int)a[1];
+        const char *buf = (const char *)a[2];
+        size_t len = (size_t)a[3];
 
-      if(fd == 1 || fd == 2) {
-        for(size_t i = 0; i < len; i ++) {
-          putch(buf[i]);
-        } 
-
-        c->GPRx = len;  //返回成功写出的字数
-      } else {
-        c->GPRx = (intptr_t)-1;
+        if(fd == 1 || fd == 2) {
+          for(size_t i = 0; i < len; i ++) {
+            putch(buf[i]);
+          } 
+          c->GPRx = len;  //返回成功写出的字数
+        } else {
+          c->GPRx = (intptr_t)-1;
+        }
       }
-    }
-    break;
+      break;
+
+    case SYS_brk:
+      c->GPRx = 0;
+      break;
 
     default: panic("Unhandled syscall ID = %d", a[0]);
   }

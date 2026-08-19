@@ -82,7 +82,26 @@ int _write(int fd, void *buf, size_t count) {
      (intptr_t)count);
 }
 
+extern char _end;
+static intptr_t current_brk = (intptr_t)&_end;
+
 void *_sbrk(intptr_t increment) {
+  intptr_t old_brk = current_brk;
+  intptr_t new_brk = current_brk + increment;
+
+  intptr_t ret = _syscall_(
+    SYS_brk,
+    new_brk,
+    0,
+    0
+  );
+   
+  //返回0表示这个地址被接受了
+  if(ret == 0) {
+    current_brk = new_brk;
+    return (void *)old_brk;
+  }
+
   return (void *)-1;
 }
 
