@@ -1,0 +1,12 @@
+mainmenu "Nanos-lite Configuration"
+
+menu "Tracing"
+
+config STRACE
+  bool "Enable system call tracer"
+  default n
+  help
+    Print each system call's name, arguments, and return value from
+    nanos-lite's system call dispatcher.
+
+endmenu
