@@ -126,3 +126,29 @@ int fs_close(int fd) {
   file_table[fd].open_offset = 0;
   return 0;
 }
+
+size_t fs_write(int fd, const void *buf, size_t len) {
+  assert(fd >= 0 && fd < LENGTH(file_table)); 
+
+  Finfo *file = &file_table[fd];
+  size_t ret;
+
+  if(file->write != NULL) {
+    //设备文件使用自己的函数
+    ret = file->write(buf, file->open_offset, len);
+  } else {
+    //普通文件不能写过文件末尾
+    if(file->open_offset >= file->size) {
+      return 0;
+    }
+
+    size_t remain = file->size - file->open_offset;
+    if(len > remain) {
+      len = remain;  //写到文件末尾
+    }
+
+    ret = ramdisk_write(buf, file->disk_offset + file->open_offset, len);
+  }
+  return ret;
+
+}
