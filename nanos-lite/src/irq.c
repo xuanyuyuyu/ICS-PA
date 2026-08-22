@@ -7,6 +7,7 @@ CTE 将硬件异常转换成 Event 后调用已注册的 user_handler，
 当前就是 nanos-lite 的 do_event()；
 最后 do_event() 根据事件类型分发给相应的事件处理函数。
 */
+void do_syscall(Context *c);
 
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
