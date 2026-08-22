@@ -149,6 +149,7 @@ size_t fs_write(int fd, const void *buf, size_t len) {
 
     ret = ramdisk_write(buf, file->disk_offset + file->open_offset, len);
   }
+  file->open_offset += ret;
   return ret;
 
 }
