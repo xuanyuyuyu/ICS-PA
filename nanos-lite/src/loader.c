@@ -79,6 +79,7 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
         phdr.p_memsz - phdr.p_filesz
       );
   }
+  fs_close(fd);
   return ehdr.e_entry;
 }
 
