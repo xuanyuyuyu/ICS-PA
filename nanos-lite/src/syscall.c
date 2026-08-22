@@ -84,7 +84,7 @@ void do_syscall(Context *c) {
           } 
           c->GPRx = len;  //返回成功写出的字数
         } else {
-          c->GPRx = (intptr_t)-1;
+          c->GPRx = fs_write(fd, buf, len);
         }
       }
       break;
