@@ -2,7 +2,7 @@
 #include <elf.h>
 #include <stddef.h>
 #include <stdint.h>
-
+#include <fs.h>
 #ifdef __LP64__
 # define Elf_Ehdr Elf64_Ehdr
 # define Elf_Phdr Elf64_Phdr
@@ -40,8 +40,12 @@ size_t ramdisk_read(void *buf, size_t offset, size_t len);
 static uintptr_t loader(PCB *pcb, const char *filename) {
   Elf_Ehdr ehdr;
 
+  int fd = fs_open(filename, 0, 0);
+  assert(fd >= 0);
+
+  size_t ret = fs_read(fd, &ehdr, sizeof(ehdr));
   //randisk只有dummy，从偏移0开始
-  ramdisk_read(&ehdr, 0, sizeof(ehdr));
+  assert(ret == sizeof(ehdr));
 
   assert(ehdr.e_ident[EI_MAG0] == ELFMAG0);
   assert(ehdr.e_ident[EI_MAG1] == ELFMAG1);
@@ -54,7 +58,9 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
 
     size_t ph_offset = ehdr.e_phoff + i * ehdr.e_phentsize;
 
-    ramdisk_read(&phdr, ph_offset, sizeof(phdr));
+    assert(fs_lseek(fd, ph_offset, SEEK_SET) != (size_t)-1);
+    assert(fs_read(fd, &phdr, sizeof(phdr)) == sizeof(phdr));
+
     //只加载PT_LOAD段
     if(phdr.p_type != PT_LOAD) {
       continue;
@@ -62,8 +68,10 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
 
     assert(phdr.p_memsz >= phdr.p_filesz);
 
-    //将ELF文件中的段复制到它要求的虚拟地址
-    ramdisk_read((void *)(uintptr_t)phdr.p_vaddr, phdr.p_offset, phdr.p_filesz);
+    //移动到当前段在ELF文件中的位置
+    assert(fs_lseek(fd, phdr.p_offset, SEEK_SET) != (size_t)-1);
+    //加载到ELF指定的运行地址
+    assert(fs_read(fd, (void *)(uintptr_t)phdr.p_vaddr, phdr.p_filesz) == phdr.p_filesz); 
 
     //.bss区域在ELF文件中不占空间，需要手动清零
     memset((void *)(uintptr_t)(phdr.p_vaddr + phdr.p_filesz),

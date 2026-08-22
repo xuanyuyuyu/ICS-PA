@@ -28,7 +28,7 @@ else
 -include $(NANOS_HOME)/include/config/auto.conf
 CFLAGS += $(if $(CONFIG_STRACE),-DCONFIG_STRACE,)
 
-#HAS_NAVY = 1
+HAS_NAVY = 1
 RAMDISK_FILE = build/ramdisk.img
 
 NAME = nanos-lite
