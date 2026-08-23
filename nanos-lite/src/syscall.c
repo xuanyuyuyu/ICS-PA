@@ -1,8 +1,9 @@
 #include <common.h>
 #include <stdint.h>
+#include "amdev.h"
 #include "syscall.h"
 #include <fs.h>
-
+#include <sys/time.h>
 #ifdef CONFIG_STRACE
 static const char *syscall_name[] = {
   [SYS_exit]         = "exit",
@@ -44,6 +45,22 @@ static const char *get_syscall_name(uintptr_t id) {
 #endif
 #endif
 
+static int sys_gettimeofday(struct timeval *tv, void *tz) {
+  //当前不处理时区
+  (void)tz;
+
+  if(tv == NULL) {
+    return -1;
+  }
+  AM_TIMER_UPTIME_T uptime = io_read(AM_TIMER_UPTIME);
+
+  tv->tv_sec = uptime.us / 1000000;  //秒
+  tv->tv_usec = uptime.us % 1000000;  //微秒
+  return 0;
+}
+
+
+
 void do_syscall(Context *c) {
   uintptr_t a[4];
   a[0] = c->GPR1;  //系统调用号
@@ -73,20 +90,11 @@ void do_syscall(Context *c) {
       halt(0);
       break;
 
-    case SYS_write: {
-        int fd = (int)a[1];
-        const char *buf = (const char *)a[2];
-        size_t len = (size_t)a[3];
-
-        if(fd == 1 || fd == 2) {
-          for(size_t i = 0; i < len; i ++) {
-            putch(buf[i]);
-          } 
-          c->GPRx = len;  //返回成功写出的字数
-        } else {
-          c->GPRx = fs_write(fd, buf, len);
-        }
-      }
+    case SYS_write: 
+      c->GPRx = fs_write(
+        (int)a[1],
+        (const void *)a[2],
+        (size_t)a[3]);
       break;
 
     case SYS_brk:
@@ -116,6 +124,11 @@ void do_syscall(Context *c) {
     case SYS_lseek:
       c->GPRx = fs_lseek((int)a[1], (size_t)a[2], (int)a[3]);
       break;
+        
+    case SYS_gettimeofday:
+      c->GPRx = sys_gettimeofday((struct timeval *)a[1], (void *)a[2]);
+      break;
+      
     default: panic("Unhandled syscall ID = %d", a[0]);
   }
 
