@@ -1,5 +1,6 @@
 #include "klib-macros.h"
 #include <common.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #if defined(MULTIPROGRAM) && !defined(TIME_SHARING)
@@ -78,7 +79,28 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-  return 0;
+  if(buf == NULL || len == 0) {
+    return 0;
+  }
+  AM_GPU_CONFIG_T config = io_read(AM_GPU_CONFIG);
+
+  assert(offset % sizeof(uint32_t) == 0);
+  assert(len % sizeof(uint32_t) == 0);
+
+  size_t pixel_offset = offset / sizeof(uint32_t);
+  size_t pixel_count = len / sizeof(uint32_t);
+
+  int x = pixel_offset % config.width;
+  int y = pixel_offset / config.width;
+
+  //NDL_DrawRect逐行写入，因此一次写入不能跨越屏幕行
+
+  assert(y < config.height);
+  assert(x + pixel_count <= (size_t)config.width);
+
+  io_write(AM_GPU_FBDRAW, x, y, (void *)buf, (int)pixel_count, 1, true);
+  
+  return len;
 }
 
 void init_device() {

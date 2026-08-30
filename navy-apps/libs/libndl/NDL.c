@@ -25,6 +25,11 @@ static int read_screen_size(void) {
   char buf[64];
 
   int nread = read(fd, buf, sizeof(buf) - 1);
+  close(fd);
+
+  if(nread <= 0) {
+    return -1;
+  }
 
   buf[nread] = '\0';
 
@@ -119,6 +124,54 @@ void NDL_OpenCanvas(int *w, int *h) {
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
+  if(pixels == NULL || fbdev < 0) {
+    return;
+  }
+  if(w <= 0 || h <= 0) {
+    return;
+  }
+
+  //绘制区域必须全部在画布内
+
+  assert(x >= 0);
+  assert(y >= 0);
+  assert(x + w <= canvas_w);
+  assert(y + h <= canvas_h);
+
+  int nwm_mode = getenv("NWM_APP") != NULL;
+
+  int target_width;
+  int start_x;
+  int start_y;
+
+  if(nwm_mode) {
+    //NWM模式下，fd 5本身就是当前窗口的画布。
+    target_width = canvas_w;
+    start_x = x;
+    start_y = y;
+  } else {
+    //普通模式，画布居中放在整个屏幕中
+    int canvas_offset_x = (screen_w - canvas_w) / 2;
+    int canvas_offset_y = (screen_h - canvas_h) / 2;
+
+    target_width = screen_w;
+    start_x = canvas_offset_x + x;
+    start_y = canvas_offset_y + y;
+  }
+
+  for (int row = 0; row < h; row ++) {
+    off_t offset = ((start_y + row) * target_width + start_x) * sizeof(uint32_t);
+
+    off_t result = lseek(fbdev, offset, SEEK_SET);
+
+    assert(result != (off_t)-1);
+
+    ssize_t written = write(fbdev, pixels + row * w, w * sizeof(uint32_t));
+
+    assert(written == ((ssize_t)(w * sizeof(uint32_t))));
+  }
+
+
 }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {
@@ -137,19 +190,38 @@ int NDL_QueryAudio() {
 
 int NDL_Init(uint32_t flags) {
   (void)flags;
+
   if (getenv("NWM_APP")) {
     evtdev = 3;
   } else {
     evtdev = open("/dev/events", O_RDONLY);
+
     if(evtdev < 0) {
       return -1;
     }
-  }
-  if(read_screen_size() != 0) {
-    if(!getenv("NWM_APP") && evtdev >= 0) {
+
+    fbdev = open("/dev/fb", O_WRONLY, 0);
+
+    if(fbdev < 0) {
       close(evtdev);
       evtdev = -1;
+      return -1;
     }
+
+  }
+  if(read_screen_size() != 0) {
+    if(!getenv("NWM_APP")) {
+      if(evtdev >= 0) {
+        close(evtdev);
+      }
+
+      if(fbdev >= 0) {
+        close(fbdev);
+      }
+    }
+    evtdev = -1;
+    fbdev = -1;
+    
     return -1;
   }
 
@@ -158,9 +230,16 @@ int NDL_Init(uint32_t flags) {
 }
 
 void NDL_Quit() {
+  if (!getenv("NWM_APP")) {
+    if (evtdev >= 0) {
+      close(evtdev);
+    }
 
-  if(!getenv("NWM_APP") && evtdev >= 0) {
-    close(evtdev);
+    if (fbdev >= 0) {
+      close(fbdev);
+    }
   }
+
   evtdev = -1;
+  fbdev = -1;
 }
