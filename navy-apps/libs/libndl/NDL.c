@@ -1,19 +1,48 @@
+#include "sys/_default_fcntl.h"
+#include "sys/types.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <fcntl.h>
+
 
 static int evtdev = -1;
 static int fbdev = -1;
 static int screen_w = 0, screen_h = 0;
 
+//获取程序运行到现在经过了多少毫秒
 uint32_t NDL_GetTicks() {
-  return 0;
+  struct timeval tv;
+
+  if(gettimeofday(&tv, NULL) != 0) {
+    return 0;
+  }
+
+  uint64_t milliseconds = (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
+
+  return (uint32_t)milliseconds;
 }
 
 int NDL_PollEvent(char *buf, int len) {
-  return 0;
+  if(buf == NULL || len <= 1 || evtdev < 0) {
+    return 0;
+  }
+
+  int nread = read(evtdev, buf, len);
+
+  if(nread <= 0) {
+    return 0;
+  }
+
+  if(nread < len) {
+    buf[nread] = '\0';
+  } else {
+    buf[len - 1] = '\0';
+  }
+  return 1;
 }
 
 void NDL_OpenCanvas(int *w, int *h) {
@@ -54,11 +83,22 @@ int NDL_QueryAudio() {
 }
 
 int NDL_Init(uint32_t flags) {
+  (void)flags;
   if (getenv("NWM_APP")) {
     evtdev = 3;
+  } else {
+    evtdev = open("/dev/events", O_RDONLY);
+    if(evtdev < 0) {
+      return -1;
+    }
   }
   return 0;
 }
 
 void NDL_Quit() {
+
+  if(!getenv("NWM_APP") && evtdev >= 0) {
+    close(evtdev);
+  }
+  evtdev = -1;
 }

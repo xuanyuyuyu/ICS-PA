@@ -15,17 +15,19 @@ static uint64_t get_time_us(void) {
 }
 
 int main(void) {
-    uint64_t last = get_time_us();
+    NDL_Init(0);
+
+    uint32_t last = NDL_GetTicks();
 
     while(1) {
-        uint64_t now = get_time_us();
+        uint64_t now = NDL_GetTicks();
 
-        if(now - last >= 500000) {
-            printf("0.5 second passed, uptime = %llums\n", (unsigned long long)(now / 1000));
+        if(now - last >= 500) {
+            printf("0.5 second passed, uptime = %llums\n", now);
             fflush(stdout);
             last = now;
         }
     }
-
+    NDL_Quit();
     return 0;
 }
