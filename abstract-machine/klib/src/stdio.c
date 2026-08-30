@@ -2,6 +2,7 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <stdarg.h>
+#include <stddef.h>
 
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
@@ -152,12 +153,194 @@ int sprintf(char *out, const char *fmt, ...) {
   return ret;
 }
 
-int snprintf(char *out, size_t n, const char *fmt, ...) {
-  panic("Not implemented");
+
+
+
+
+
+static void append_char_n(char *out, size_t n, size_t *count, char ch) {
+  if(n > 0 && *count < n - 1) {
+    out[*count] = ch;
+  }
+  (*count) ++;
+
 }
 
-int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
-  panic("Not implemented");
+static void append_uint_n(char *out, size_t n, size_t *count, unsigned int value, unsigned base, int width, char pad, bool negative) {
+  const char digits[] = "0123456789abcdef";
+  char temp[32];
+  int len = 0;
+
+  do{
+    temp[len ++] = digits[value % base];
+    value /= base;
+  } while(value != 0);
+
+  int total_len = len + (negative ? 1 : 0);
+  int padding = width > total_len ? width - total_len : 0;
+
+  //空格补齐放在负号前面
+  if(pad == ' ') {
+    while(padding -- > 0) {
+      append_char_n(out, n, count, ' ');
+    }
+  }
+
+  //0补齐放在负号后面
+  if(pad == '0') {
+    while(padding -- > 0) {
+      append_char_n(out, n, count, '0');
+    }
+  }
+
+  //正序输出数字
+  while(len > 0) {
+    append_char_n(out, n, count, temp[--len]);
+  }
+
+}
+
+
+
+
+
+int snprintf(char *out, size_t n, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int ret = vsnprintf(out, n, fmt, ap);
+
+  va_end(ap);
+  return ret;
+}
+
+int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) { 
+  size_t count = 0;
+
+  while(*fmt != '\0') {
+    if(*fmt != '%') {
+      append_char_n(out, n, &count, *fmt);
+      fmt ++;
+      continue;
+    }
+
+    fmt ++;
+
+    char pad = ' ';
+    int width = 0;
+
+    //解析前导0
+    if(*fmt == '0') {
+      pad = '0';
+      fmt ++;
+    }
+    while(*fmt >= '0' && *fmt <= '9') {
+      width = width * 10 + (*fmt - '0');
+      fmt ++;
+    }
+
+    //处理格式字符串末尾单独出现的%
+    if(*fmt == '\0') {
+      append_char_n(out, n, &count, '%');
+      break;
+    }
+
+    char spec = *fmt ++;
+
+     switch (spec) {
+      case '%':
+        append_char_n(out, n, &count, '%');
+        break;
+
+      case 'c': {
+        int ch = va_arg(ap, int);
+        append_char_n(out, n, &count, (char)ch);
+        break;
+      }
+
+      case 's': {
+        const char *str = va_arg(ap, const char *);
+
+        if (str == NULL) {
+          str = "(null)";
+        }
+
+        while (*str != '\0') {
+          append_char_n(out, n, &count, *str);
+          str++;
+        }
+        break;
+      }
+
+      case 'd': {
+        int value = va_arg(ap, int);
+        bool negative = value < 0;
+        unsigned int magnitude;
+
+        if (negative) {
+          /*
+           * 这样写可以正确处理 INT_MIN，
+           * 避免直接使用 -value 产生有符号溢出。
+           */
+          magnitude = 0u - (unsigned int)value;
+        } else {
+          magnitude = (unsigned int)value;
+        }
+
+        append_uint_n(
+            out, n, &count,
+            magnitude, 10,
+            width, pad, negative);
+        break;
+      }
+
+      case 'u': {
+        unsigned int value = va_arg(ap, unsigned int);
+
+        append_uint_n(
+            out, n, &count,
+            value, 10,
+            width, pad, false);
+        break;
+      }
+
+      case 'x': {
+        unsigned int value = va_arg(ap, unsigned int);
+
+        append_uint_n(
+            out, n, &count,
+            value, 16,
+            width, pad, false);
+        break;
+      }
+
+      default:
+        // 不支持的格式原样输出
+        append_char_n(out, n, &count, '%');
+        append_char_n(out, n, &count, spec);
+        break;
+    }
+  }
+
+  /*
+   * n > 0 时，保证结果以 '\0' 结尾。
+   */
+  if (n > 0) {
+    if (count < n) {
+      out[count] = '\0';
+    } else {
+      out[n - 1] = '\0';
+    }
+  }
+
+  /*
+   * 返回完整结果本来应该有的长度，
+   * 不包含结尾的 '\0'。
+   */
+  return (int)count;
+
+
+
 }
 
 #endif
