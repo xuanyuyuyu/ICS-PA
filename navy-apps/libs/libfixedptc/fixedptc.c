@@ -198,3 +198,4 @@ fixedpt fixedpt_ln(fixedpt x) {
 	return (fixedpt_mul(LN2, (log2 << FIXEDPT_FBITS)) + f
 	    - fixedpt_mul(s, f - R));
 }
+

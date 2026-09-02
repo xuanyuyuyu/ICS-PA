@@ -1,18 +1,83 @@
 #include <NDL.h>
 #include <sdl-video.h>
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 
+
+//一张图的像素，复制到另一张图的像素内存中
 void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect) {
   assert(dst && src);
   assert(dst->format->BitsPerPixel == src->format->BitsPerPixel);
+  
+  //若srcrect为NULL,默认复制src的整张画布
+  int src_x = 0;
+  int src_y = 0;
+  int w = src->w;
+  int h = src->h;
+
+  if(srcrect != NULL) {
+    src_x = srcrect->x;
+    src_y = srcrect->y;
+    w = srcrect->w;
+    h = srcrect->h;
+  }
+
+  //若dstrect为NULL,默认复制到左上角
+  int dst_x = 0;
+  int dst_y = 0;
+  
+  if(dstrect != NULL) {
+    dst_x = dstrect->x;
+    dst_y = dstrect->y;
+  }
+
+  int bytes_per_pixel = src->format->BytesPerPixel;
+  
+  //确保复制区没有越界
+  assert(src_x >= 0 && src_y >= 0);
+  assert(dst_x >= 0 && dst_y >= 0);
+  assert(src_x + w <= src->w);
+  assert(src_y + h <= src->h);
+  assert(dst_x + w <= dst->w);
+  assert(dst_y + h <= dst->h);
+
+  //逐行复制
+  for(int y = 0; y < h; y ++) {
+    //源区域第y行的起始地址
+    uint8_t *src_row = src->pixels + (src_y + y) * src->pitch + src_x * bytes_per_pixel;
+    //目标区域第y行的起始地址
+    uint8_t *dst_row =
+          dst->pixels + (dst_y + y) * dst->pitch + dst_x *
+          bytes_per_pixel;
+
+    // 复制这一行的 w 个像素
+    memcpy(dst_row, src_row, w * bytes_per_pixel);
+  }
+
 }
 
 void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
 }
 
+//把 screen Surface 的像素内存，写到实际显示设备
 void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
+  assert(s != NULL) ;
+  assert(s->format->BitsPerPixel == 32);
+
+  if(w == 0) w = s->w - x;
+  if(h == 0) h = s->h - h;
+
+  // 防止刷新的区域越界
+  assert(x >= 0 && y >= 0);
+  assert(x + w <= s->w);
+  assert(y + h <= s->h);
+
+  uint32_t *pixels = (uint32_t *)s->pixels + y * s->w +x;
+
+  // 将 Surface 中的指定矩形区域真正画到屏幕上
+  NDL_DrawRect(pixels, x, y, w, h);
 }
 
 // APIs below are already implemented.
