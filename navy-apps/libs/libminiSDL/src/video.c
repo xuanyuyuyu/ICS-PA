@@ -59,6 +59,42 @@ void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_
 }
 
 void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
+  assert(dst != NULL);
+
+  // dstrect 为NULL时，填充整张画布
+  int x = 0;
+  int y = 0;
+  int w = dst->w;
+  int h = dst->h;
+
+  if(dstrect != NULL) {
+    x = dstrect->x;
+    y = dstrect->y;
+    w = dstrect->w;
+    h = dstrect->h;
+  }
+
+  assert(x >= 0 && y >= 0);
+  assert(x + w <= dst->w);
+  assert(y + h <= dst->h);
+
+  if(dst->format->BitsPerPixel == 32) {
+    uint32_t *pixels = (uint32_t *)dst->pixels;
+
+    for(int row = 0; row < h; row ++) {
+      for(int col = 0; col < w; col ++) {
+        pixels[(y + row) * dst->w + (x + col)] = color;
+      }
+    }
+  } else if(dst->format->BitsPerPixel == 8) {
+    uint8_t *pixels = (uint8_t *)dst->pixels;
+    for(int row = 0; row < h; row ++) {
+      memset(pixels + (y + row) * dst->pitch + x, (uint8_t)color, w);
+    }
+  } else {
+    assert(0);
+  }
+
 }
 
 //把 screen Surface 的像素内存，写到实际显示设备
