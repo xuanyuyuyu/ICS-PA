@@ -2,8 +2,10 @@
 #include <sdl-timer.h>
 #include <stdio.h>
 
+uint32_t sdl_init_ticks = 0;
+
 SDL_TimerID SDL_AddTimer(uint32_t interval, SDL_NewTimerCallback callback, void *param) {
-  return NULL;
+
 }
 
 int SDL_RemoveTimer(SDL_TimerID id) {
@@ -11,7 +13,7 @@ int SDL_RemoveTimer(SDL_TimerID id) {
 }
 
 uint32_t SDL_GetTicks() {
-  return 0;
+  return NDL_GetTicks() - sdl_init_ticks;
 }
 
 void SDL_Delay(uint32_t ms) {

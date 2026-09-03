@@ -1,7 +1,16 @@
 #include <NDL.h>
+#include <stdint.h>
+
+extern uint32_t sdl_init_ticks;
+
 
 int SDL_Init(uint32_t flags) {
-  return NDL_Init(flags);
+  int ret = NDL_Init(flags);
+
+  if(ret == 0) {
+    sdl_init_ticks = NDL_GetTicks(); 
+  }
+  
 }
 
 void SDL_Quit() {

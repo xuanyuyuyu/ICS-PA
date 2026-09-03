@@ -14,6 +14,39 @@ int SDL_PushEvent(SDL_Event *ev) {
 }
 
 int SDL_PollEvent(SDL_Event *ev) {
+  if(ev == NULL) {
+    return 0;
+  }
+
+  char buf[64];
+
+  if(NDL_PollEvent(buf, sizeof(buf)) == 0) {
+    return 0;
+  }
+
+  if(buf[0] == 'k' || (buf[1] != 'u' && buf[1] != 'd') || buf[2] != ' ') {
+    return 0;
+  }
+
+  char *name = buf + 3;
+
+  char *newline = strchr(name, '\n');
+  if(newline != NULL) {
+    *newline = '\0';
+  }
+
+  // 将字符串按键名转换成 SDLK_J、SDLK_DOWN 等 SDL 键码
+  for (int i = 0; i < (int)(sizeof(keyname) /
+  sizeof(keyname[0])); i++) {
+    if (strcmp(name, keyname[i]) == 0) {
+      ev->type = (buf[1] == 'd') ? SDL_KEYDOWN :
+      SDL_KEYUP;
+      ev->key.keysym.sym = i;
+      return 1;
+    }
+  }
+
+
   return 0;
 }
 
