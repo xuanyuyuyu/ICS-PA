@@ -552,46 +552,70 @@ rg -n 'symbol_name' .
 
 ---
 
-## BUG-003：miniSDL 的 `SDL_Init()` 未返回初始化结果
+## BUG-003：`_execve()` 错误调用 `_exit()`，导致程序重新进入 NTerm
 
 ### 基本信息
 
-- 模块：miniSDL 初始化
-- 相关文件：`navy-apps/libs/libminiSDL/src/general.c`
+- 模块：Navy libos 系统调用封装
+- 相关文件：
+  - `navy-apps/libs/libos/src/syscall.c`
+  - `nanos-lite/src/syscall.c`
+  - `nanos-lite/src/loader.c`
 - 状态：已定位，待修复
 
 ### 现象
 
-Bird 单独启动时可以运行，但由 NTerm 输入 `bird`、经 `execve()` 启动时，可能立即回到 NTerm，表现为终端光标继续闪烁。
+Bird 单独启动时可以正常运行，但在 NTerm 中输入 `bird` 并按回车后，界面仍停留在 NTerm，光标继续闪烁。加载日志连续两次显示：
+
+```text
+Loading /bin/nterm, entry = 0x8300e5e8
+Loading /bin/nterm, entry = 0x8300e5e8
+```
+
+没有出现预期的 `Loading /bin/bird`，说明 Nanos-lite 收到的不是 `SYS_execve`。
 
 ### 根因
 
-`SDL_Init()` 的返回类型是 `int`，但成功路径没有返回值：
+`navy-apps/libs/libos/src/syscall.c` 中的 `_execve()` 错误调用了 `_exit()`：
 
 ```c
-int SDL_Init(uint32_t flags) {
-  int ret = NDL_Init(flags);
-
-  if (ret == 0) {
-    sdl_init_ticks = NDL_GetTicks();
-  }
+int _execve(const char *fname, char * const argv[], char *const envp[]) {
+  _exit(SYS_execve);
+  return 0;
 }
 ```
 
-调用者读取到的返回值因此不确定。Bird 会检查 `SDL_Init(...) < 0`，随机返回值可能被误判为初始化失败，随后退出。
+因此实际执行路径为：
+
+```text
+execvp("bird")
+  -> execve("/bin/bird", ...)
+  -> _execve()
+  -> _exit(SYS_execve)
+  -> 发起 SYS_exit
+  -> Nanos-lite 再次加载 /bin/nterm
+```
+
+传给 `_exit()` 的 `SYS_execve` 只是退出状态码，并不会把系统调用类型变成 `SYS_execve`。
 
 ### 修复方式
 
-在函数末尾返回 `ret`：
+让 `_execve()` 通过 `_syscall_()` 发起真正的 `SYS_execve`，并依次传递文件名、参数数组和环境变量：
 
 ```c
-int SDL_Init(uint32_t flags) {
-  int ret = NDL_Init(flags);
-
-  if (ret == 0) {
-    sdl_init_ticks = NDL_GetTicks();
-  }
-
-  return ret;
+int _execve(const char *fname, char * const argv[], char *const envp[]) {
+  return (int)_syscall_(
+    SYS_execve,
+    (intptr_t)fname,
+    (intptr_t)argv,
+    (intptr_t)envp
+  );
 }
+```
+
+修复后的预期日志为：
+
+```text
+Loading /bin/nterm, entry = ...
+Loading /bin/bird, entry = ...
 ```
