@@ -4,6 +4,8 @@
 #include "syscall.h"
 #include <fs.h>
 #include <sys/time.h>
+#include <proc.h>
+
 #ifdef CONFIG_STRACE
 static const char *syscall_name[] = {
   [SYS_exit]         = "exit",
@@ -87,7 +89,8 @@ void do_syscall(Context *c) {
       break;
 
     case SYS_exit:
-      halt(0);
+      naive_uload(NULL, "/bin/nterm");
+      panic("SYS_exit should not return");
       break;
 
     case SYS_write: 
@@ -128,7 +131,12 @@ void do_syscall(Context *c) {
     case SYS_gettimeofday:
       c->GPRx = sys_gettimeofday((struct timeval *)a[1], (void *)a[2]);
       break;
-      
+    case SYS_execve:
+      naive_uload(NULL, (const char *)a[1]);
+
+      panic("SYS_execve should not return");
+      break;
+
     default: panic("Unhandled syscall ID = %d", a[0]);
   }
 

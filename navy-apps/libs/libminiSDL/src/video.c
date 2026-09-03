@@ -103,7 +103,7 @@ void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
   assert(s->format->BitsPerPixel == 32);
 
   if(w == 0) w = s->w - x;
-  if(h == 0) h = s->h - h;
+  if(h == 0) h = s->h - y;
 
   // 防止刷新的区域越界
   assert(x >= 0 && y >= 0);
