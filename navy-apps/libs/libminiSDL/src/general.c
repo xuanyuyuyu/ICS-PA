@@ -10,7 +10,7 @@ int SDL_Init(uint32_t flags) {
   if(ret == 0) {
     sdl_init_ticks = NDL_GetTicks(); 
   }
-  
+  return ret;
 }
 
 void SDL_Quit() {
