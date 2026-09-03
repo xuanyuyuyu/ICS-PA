@@ -93,6 +93,13 @@ void do_syscall(Context *c) {
       panic("SYS_exit should not return");
       break;
 
+    case SYS_execve:
+      // 目前只使用程序路径 filename（a[1]），暂不处理 argv 和 envp。
+      // 装载成功后会直接跳到新程序入口，不会返回。
+      naive_uload(NULL, (const char *)a[1]);
+      panic("SYS_execve should not return");
+      break;
+
     case SYS_write: 
       c->GPRx = fs_write(
         (int)a[1],
@@ -130,11 +137,6 @@ void do_syscall(Context *c) {
         
     case SYS_gettimeofday:
       c->GPRx = sys_gettimeofday((struct timeval *)a[1], (void *)a[2]);
-      break;
-    case SYS_execve:
-      naive_uload(NULL, (const char *)a[1]);
-
-      panic("SYS_execve should not return");
       break;
 
     default: panic("Unhandled syscall ID = %d", a[0]);

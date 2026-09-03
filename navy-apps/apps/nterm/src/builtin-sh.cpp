@@ -28,7 +28,7 @@ static void sh_handle_cmd(const char *cmd) {
   char filename[128];
 
   int len = strlen(cmd);
-  while(len > 0 && (cmd[len - 1] == '\n' || cmd[len - 1] == 'r')) {
+  while(len > 0 && (cmd[len - 1] == '\n' || cmd[len - 1] == '\r')) {
     len --;
   }
   if(len == 0) {
