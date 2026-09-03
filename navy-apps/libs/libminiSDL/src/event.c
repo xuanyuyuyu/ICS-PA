@@ -29,7 +29,7 @@ int SDL_WaitEvent(SDL_Event *event) {
     }
 
     // 返回的应该为"kd J\n"或"ku DOWN\n"
-    if(buf[0] != 'k' || (buf[1] != 'd' || buf[1] != 'u') || buf[2] != ' ') continue;
+    if(buf[0] != 'k' || (buf[1] != 'd' && buf[1] != 'u') || buf[2] != ' ') continue;
   
     char *name = buf + 3; //按键名
 
