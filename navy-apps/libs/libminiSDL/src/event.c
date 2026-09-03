@@ -24,7 +24,7 @@ int SDL_PollEvent(SDL_Event *ev) {
     return 0;
   }
 
-  if(buf[0] == 'k' || (buf[1] != 'u' && buf[1] != 'd') || buf[2] != ' ') {
+  if(buf[0] != 'k' || (buf[1] != 'u' && buf[1] != 'd') || buf[2] != ' ') {
     return 0;
   }
 
