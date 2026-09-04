@@ -8,11 +8,12 @@ CTE 将硬件异常转换成 Event 后调用已注册的 user_handler，
 最后 do_event() 根据事件类型分发给相应的事件处理函数。
 */
 void do_syscall(Context *c);
+extern Context* schedule(Context *prev);
 
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
     case EVENT_YIELD :
-      printf("EVENT_YIELD is trapped\n");
+      return schedule(c);
       break;
     case EVENT_SYSCALL:
       do_syscall(c);
