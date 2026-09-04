@@ -70,5 +70,15 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
 }
 
 Context *ucontext(AddrSpace *as, Area kstack, void *entry) {
-  return NULL;
+  Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
+
+  memset(c, 0, sizeof(Context));
+
+  c->mepc = (uintptr_t)entry;
+
+  c->pdir = as->ptr;
+
+  c->mstatus = 0x1800;
+
+  return c;
 }

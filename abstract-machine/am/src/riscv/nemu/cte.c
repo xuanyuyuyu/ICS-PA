@@ -46,7 +46,7 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
   // c 就是指向这份新线程初始现场的指针。  end为高地址
-  Context *c = (Context *)(uintptr_t)kstack.end - sizeof(Context);
+  Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
   
   //寄存器初值设置为0
   memset(c, 0, sizeof(Context));
@@ -65,6 +65,7 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
   return c;
 }
+
 
 void yield() {
 #ifdef __riscv_e

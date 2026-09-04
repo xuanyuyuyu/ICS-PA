@@ -6,6 +6,7 @@ static PCB pcb[MAX_NR_PROC] __attribute__((used)) = {};
 static PCB pcb_boot = {};
 PCB *current = NULL;
 
+
 void switch_boot_pcb() {
   current = &pcb_boot;
 }
@@ -31,7 +32,7 @@ static void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 void init_proc() {
   Log("Initializing processes...");
   context_kload(&pcb[0], hello_fun, "PCB 0");
-  context_kload(&pcb[1], hello_fun, "PCB 1");
+  context_uload(&pcb[1], "/bin/bird");
   switch_boot_pcb();
 }
 

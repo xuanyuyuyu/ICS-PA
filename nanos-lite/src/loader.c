@@ -1,3 +1,4 @@
+#include "klib-macros.h"
 #include <proc.h>
 #include <elf.h>
 #include <stddef.h>
@@ -92,3 +93,15 @@ void naive_uload(PCB *pcb, const char *filename) {
   ((void(*)())entry) ();  // PC = entry;
 }
 
+
+void context_uload(PCB *pcb, const char *filename) {
+  uintptr_t entry = loader(pcb, filename);
+
+  Log("Loading %s, entry = 0x%x", filename, (uint32_t)entry);
+
+  pcb->cp = ucontext(&pcb->as, RANGE(pcb->stack, pcb->stack + STACK_SIZE), (void *)entry);
+
+  pcb->cp->GPRx = (uintptr_t)heap.end;
+
+
+}
