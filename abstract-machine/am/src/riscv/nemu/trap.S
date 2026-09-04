@@ -57,8 +57,13 @@ __am_asm_trap:
   or t1, t1, a0
   csrw mstatus, t1
 
-  mv a0, sp
+  # a0是第一个参数 a0 = sp
+  mv a0, sp  
   call __am_irq_handle
+
+  # a0 是 __am_irq_handle() 返回的 Context *
+  # 切换 sp 后，后续恢复的是“新线程”的上下文
+  mv sp, a0
 
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)

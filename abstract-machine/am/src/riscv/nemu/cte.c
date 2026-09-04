@@ -1,6 +1,7 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
+#include <stdint.h>
 
 static Context* (*user_handler)(Event, Context*) = NULL;
 
@@ -41,8 +42,28 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
   return true;
 }
 
+//为一个“还从没运行过的新线程”，伪造一份初始CPU现场
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
-  return NULL;
+
+  // c 就是指向这份新线程初始现场的指针。  end为高地址
+  Context *c = (Context *)(uintptr_t)kstack.end - sizeof(Context);
+  
+  //寄存器初值设置为0
+  memset(c, 0, sizeof(Context));
+
+  //entry为新线程要运行的函数，mepc为恢复后继续执行的地址，这一行决定“新线程从哪里开始执行”
+  c->mepc = (uintptr_t)entry;
+
+  //x2是sp，新进程使用自己的栈顶
+  c->gpr[2] = (uintptr_t)kstack.end;
+
+  c->gpr[10] = (uintptr_t)arg;  //x10即a0
+  //mret后仍运行在M-mode
+  c->mstatus = 0x1800;
+
+  (void)arg;
+
+  return c;
 }
 
 void yield() {
