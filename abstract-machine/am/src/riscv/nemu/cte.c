@@ -5,7 +5,15 @@
 
 static Context* (*user_handler)(Event, Context*) = NULL;
 
+void __am_get_cur_as(Context *c);
+void __am_switch(Context *c);
+
+
 Context* __am_irq_handle(Context *c) {
+
+  //记录发生陷阱时，cpu当前使用的根页表 该根页表地址会保存在c->pdir
+  __am_get_cur_as(c);
+
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
@@ -22,11 +30,13 @@ Context* __am_irq_handle(Context *c) {
 
       default: ev.event = EVENT_ERROR; break;
     }
-
+    //可能调用schedule
     c = user_handler(ev, c);
     assert(c != NULL);
   }
 
+  //读取即将恢复的Context中的c->pdir，并写入CPU的satp
+  __am_switch(c);
   return c;
 }
 

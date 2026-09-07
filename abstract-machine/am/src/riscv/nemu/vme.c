@@ -57,10 +57,12 @@ void protect(AddrSpace *as) {
 void unprotect(AddrSpace *as) {
 }
 
+//把当前satp中的根页表的地址保存到context中
 void __am_get_cur_as(Context *c) {
   c->pdir = (vme_enable ? (void *)get_satp() : NULL);
 }
 
+//将即将运行的进程的根页表写进satp
 void __am_switch(Context *c) {
   if (vme_enable && c->pdir != NULL) {
     set_satp(c->pdir);

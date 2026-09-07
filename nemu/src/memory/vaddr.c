@@ -30,9 +30,9 @@ word_t vaddr_ifetch(vaddr_t addr, int len) {
 }
 
 word_t vaddr_read(vaddr_t addr, int len) {
-  return paddr_read(translate(addr, len, MEM_TYPE_IFETCH), len);
+  return paddr_read(translate(addr, len, MEM_TYPE_READ), len);
 }
 
 void vaddr_write(vaddr_t addr, int len, word_t data) {
-  paddr_write(translate(addr, len, MEM_TYPE_IFETCH), len, data);
+  paddr_write(translate(addr, len, MEM_TYPE_WRITE), len, data);
 }
