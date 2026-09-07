@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <fs.h>
+#include <memory.h>
 #ifdef __LP64__
 # define Elf_Ehdr Elf64_Ehdr
 # define Elf_Phdr Elf64_Phdr
@@ -94,14 +95,25 @@ void naive_uload(PCB *pcb, const char *filename) {
 }
 
 
-void context_uload(PCB *pcb, const char *filename) {
+void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   uintptr_t entry = loader(pcb, filename);
 
   Log("Loading %s, entry = 0x%x", filename, (uint32_t)entry);
 
   pcb->cp = ucontext(&pcb->as, RANGE(pcb->stack, pcb->stack + STACK_SIZE), (void *)entry);
+  
+  int argc = 0;
+  while(argv[argc] != NULL) {
+    argc ++;
+  }
 
-  pcb->cp->GPRx = (uintptr_t)heap.end;
+  //为新用户程序申请8页 = 32KB
+  uint8_t *ustack = (uint8_t *)new_page(8);
 
+  uintptr_t *args = (uintptr_t *)(ustack + 8 * PGSIZE - 3 * (sizeof(uintptr_t)));
+  args[0] = argc;
+  args[1] = (uintptr_t)argv;
+  args[2] = (uintptr_t)envp;
 
+  pcb->cp->GPRx = (uintptr_t)args;
 }

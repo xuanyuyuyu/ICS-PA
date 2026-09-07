@@ -25,14 +25,14 @@ static void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
   pcb->cp = kcontext(RANGE(pcb->stack, pcb->stack+STACK_SIZE),
                   entry,
                   arg);
-  
-
 }
 
 void init_proc() {
   Log("Initializing processes...");
+  char *argv[] = { "/bin/bird", NULL };
+  char *envp[] = { NULL };
   context_kload(&pcb[0], hello_fun, "PCB 0");
-  context_uload(&pcb[1], "/bin/bird");
+  context_uload(&pcb[1], "/bin/bird", argv, envp);
   switch_boot_pcb();
 }
 

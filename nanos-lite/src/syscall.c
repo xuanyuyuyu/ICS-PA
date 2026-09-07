@@ -61,7 +61,7 @@ static int sys_gettimeofday(struct timeval *tv, void *tz) {
   return 0;
 }
 
-
+extern void switch_boot_pcb();
 
 void do_syscall(Context *c) {
   uintptr_t a[4];
@@ -96,7 +96,11 @@ void do_syscall(Context *c) {
     case SYS_execve:
       // 目前只使用程序路径 filename（a[1]），暂不处理 argv 和 envp。
       // 装载成功后会直接跳到新程序入口，不会返回。
-      naive_uload(NULL, (const char *)a[1]);
+      context_uload(current, (const char *)a[1], (char *const *)a[2], (char *const *)a[3]);
+      //不能直接返回到A
+      switch_boot_pcb();
+      yield();
+
       panic("SYS_execve should not return");
       break;
 

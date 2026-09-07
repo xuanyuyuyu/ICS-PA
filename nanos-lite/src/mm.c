@@ -3,12 +3,22 @@
 static void *pf = NULL;
 
 void* new_page(size_t nr_page) {
-  return NULL;
+  void *p = pf;
+
+  assert((uintptr_t)pf + nr_page * PGSIZE <= (uintptr_t)heap.end);
+
+  pf = (void *)((uintptr_t)pf + nr_page * PGSIZE);  //pf指向下一块可分配的空闲物理页的起始地址
+
+  return p;
 }
 
 #ifdef HAS_VME
+//申请页表
 static void* pg_alloc(int n) {
-  return NULL;
+  assert(n % PGSIZE == 0) ;
+  void *p = new_page(n / PGSIZE);
+  memset(p, 0, n);
+  return p;
 }
 #endif
 
