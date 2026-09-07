@@ -89,8 +89,8 @@ void do_syscall(Context *c) {
       break;
 
     case SYS_exit:
-      naive_uload(NULL, "/bin/nterm");
-      panic("SYS_exit should not return");
+      //naive_uload(NULL, "/bin/nterm");
+      halt(a[1]);
       break;
 
     case SYS_execve:
