@@ -18,6 +18,13 @@ static Context* do_event(Event e, Context* c) {
     case EVENT_SYSCALL:
       do_syscall(c);
       break;
+    case EVENT_IRQ_TIMER:{
+      static int count = 0;
+      if(++ count % 100 == 0) {
+        Log("timer interrupt");
+      }
+      return schedule(c);
+    }
     default: panic("Unhandled event ID = %d", e.event);
   }
 

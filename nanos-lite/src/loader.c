@@ -86,6 +86,14 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
     assert(file_end >= seg_start);
     assert(mem_end >= seg_start);
 
+    assert(seg_start >= (uintptr_t)pcb->as.area.start);
+    assert(mem_end <= (uintptr_t)pcb->as.area.end);
+
+    //记录最高地址
+    if(mem_end > pcb->max_brk) {
+      pcb->max_brk = mem_end;
+    }
+
     // 页表只能按整页建立映射，因此需要把段覆盖的首尾地址
     // 分别向下、向上对齐到页边界。
     uintptr_t page_va = ROUNDDOWN(seg_start, PGSIZE);
@@ -149,6 +157,8 @@ void naive_uload(PCB *pcb, const char *filename) {
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   protect(&pcb->as);
 
+  pcb->max_brk = 0; //可能复用当前PCB，需要重新清零
+  
   uintptr_t entry = loader(pcb, filename);
 
   Log("Loading %s, entry = 0x%x", filename, (uint32_t)entry);

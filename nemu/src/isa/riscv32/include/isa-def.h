@@ -26,6 +26,7 @@ typedef struct {
   word_t mepc;
   word_t mcause;
   word_t satp;  //mode和根页表的物理页号
+  bool INTR;  //是否时钟中断
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode

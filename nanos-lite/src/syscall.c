@@ -92,6 +92,10 @@ void do_syscall(Context *c) {
       //naive_uload(NULL, "/bin/nterm");
       halt(a[1]);
       break;
+    
+    case SYS_brk:
+      c->GPRx = mm_brk(a[1]);
+      break;
 
     case SYS_execve:
       // 目前只使用程序路径 filename（a[1]），暂不处理 argv 和 envp。
@@ -111,9 +115,6 @@ void do_syscall(Context *c) {
         (size_t)a[3]);
       break;
 
-    case SYS_brk:
-      c->GPRx = 0;
-      break;
 
     case SYS_open:
       c->GPRx = fs_open(

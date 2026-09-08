@@ -226,7 +226,17 @@ static int decode_exec(Decode *s) {
       s->dnpc = isa_raise_intr(11, s->pc);
   });
 
+  //mret：从机器模式的异常/中断处理程序返回
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret, N, {
+      //取出MPIE
+      word_t mpie = (cpu.mstatus >> 7) & 1u;
+      //清零MIE
+      cpu.mstatus &= ~(1u << 3);
+      //恢复MIE
+      cpu.mstatus |= mpie << 3;
+      //设置MPIE (RISCV规定，执行mret后将MPIE置1)
+      cpu.mstatus |= 1u << 7;
+      //返回源程序
       s->dnpc = cpu.mepc;
   });
 

@@ -1,5 +1,7 @@
+#include "klib-macros.h"
 #include <memory.h>
-
+#include <proc.h>
+#include <stdint.h>
 static void *pf = NULL;
 
 void* new_page(size_t nr_page) {
@@ -28,6 +30,24 @@ void free_page(void *p) {
 
 /* The brk() system call handler. */
 int mm_brk(uintptr_t brk) {
+  //brk没有超过历史最高位时，不需要申请新页面
+  if(brk <= current->max_brk) {
+    return 0;
+  }
+
+  uintptr_t map_start = ROUNDUP(current->max_brk, PGSIZE);
+
+  uintptr_t map_end = ROUNDUP(brk, PGSIZE);
+
+  for(uintptr_t va = map_start; va < map_end; va += PGSIZE) {
+    void *pa = new_page(1);
+
+    memset(pa, 0, PGSIZE);
+
+    map(&current->as, (void *)va, pa, MMAP_READ | MMAP_WRITE);
+
+  }
+  current->max_brk = brk; //更新最高地址
   return 0;
 }
 

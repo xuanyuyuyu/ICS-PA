@@ -117,7 +117,7 @@ Context *ucontext(AddrSpace *as, Area kstack, void *entry) {
 
   c->pdir = as->ptr;
 
-  c->mstatus = 0x1800;
+  c->mstatus = 0x1880;
 
   return c;
 }

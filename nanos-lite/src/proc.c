@@ -17,7 +17,7 @@ void hello_fun(void *arg) {
 
   while (1) {
       Log("Hello from %s, round %d", name, j++);
-      yield();
+     // yield();
     }
 }
 
@@ -29,11 +29,12 @@ static void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 
 void init_proc() {
   Log("Initializing processes...");
-  char *argv[] = { "/bin/dummy", NULL };
-  char *envp[] = { NULL };
-  context_kload(&pcb[1], hello_fun, "PCB 0");
+  // char *argv[] = { "/bin/dummy", NULL };
+  // char *envp[] = { NULL };
+  context_kload(&pcb[0], hello_fun, "PCB 0");
+  context_kload(&pcb[1], hello_fun, "PCB 1");
   // context_uload(&pcb[1], "/bin/bird", argv, envp);
-  context_uload(&pcb[0], "/bin/dummy", argv, envp);
+  // context_uload(&pcb[0], "/bin/dummy", argv, envp);
   switch_boot_pcb();
 }
 

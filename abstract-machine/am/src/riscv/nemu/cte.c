@@ -17,6 +17,9 @@ Context* __am_irq_handle(Context *c) {
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
+      case 0x80000007u:
+        ev.event = EVENT_IRQ_TIMER;
+        break;
       case 11:
         if((intptr_t)c->GPR1 == -1) {
           ev.event = EVENT_YIELD;
@@ -69,7 +72,7 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
   c->gpr[10] = (uintptr_t)arg;  //x10即a0
   //mret后仍运行在M-mode
-  c->mstatus = 0x1800;
+  c->mstatus = 0x1880;
 
   (void)arg;
 
