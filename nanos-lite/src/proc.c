@@ -27,16 +27,20 @@ static void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
                   arg);
 }
 
-void init_proc() {
-  Log("Initializing processes...");
-  // char *argv[] = { "/bin/dummy", NULL };
-  // char *envp[] = { NULL };
-  context_kload(&pcb[0], hello_fun, "PCB 0");
-  context_kload(&pcb[1], hello_fun, "PCB 1");
-  // context_uload(&pcb[1], "/bin/bird", argv, envp);
-  // context_uload(&pcb[0], "/bin/dummy", argv, envp);
-  switch_boot_pcb();
-}
+ void init_proc() {
+    Log("Initializing processes...");
+
+    char *argv[] = {"/bin/hello", NULL};
+    char *envp[] = {NULL};
+
+    // 用户进程
+    context_uload(&pcb[0], "/bin/hello", argv, envp);
+
+    // 内核线程
+    context_kload(&pcb[1], hello_fun, "kernel");
+
+    switch_boot_pcb();
+  }
 
 Context* schedule(Context *prev) {
   current->cp = prev;

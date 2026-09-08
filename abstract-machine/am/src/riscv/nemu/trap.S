@@ -40,10 +40,36 @@ f(30) f(31)
 
 .align 3
 .globl __am_asm_trap
-__am_asm_trap:
-  addi sp, sp, -CONTEXT_SIZE
+__am_asm_trap: 
+  # 交换sp和mscratch
+  # 来自用户态：sp得到内核栈，mscratch保存用户sp
+  # 来自内核态：sp得到0， mscratch保存原内核sp
+  csrrw sp, mscratch, sp
+  bnez sp, 1f
 
+  # 来自内核态，恢复原来的内核sp
+  csrr sp, mscratch
+  addi sp, sp, -CONTEXT_SIZE
   MAP(REGS, PUSH)
+  li t0, 0
+  j 2f
+
+1:
+  # 来自用户态，此时sp已经指向内核栈 
+  addi sp, sp, -CONTEXT_SIZE
+  MAP(REGS, PUSH)
+  li t0, 1
+
+2:
+  # 保存该Context将返回到哪里
+  STORE t0, OFFSET_NP(sp)  # context->np = t0
+  
+  # mscratch保存的是陷入前的原始sp
+  csrr t0, mscratch
+  STORE t0, OFFSET_SP(sp)
+
+  # 进入CTE后视为内核态，支持CTE重入
+  csrw mscratch, zero
 
   csrr t0, mcause
   csrr t1, mstatus
@@ -71,7 +97,16 @@ __am_asm_trap:
   csrw mstatus, t1
   csrw mepc, t2
 
+  #若将返回用户态，记录该进程的内核栈栈顶
+  LOAD t0, OFFSET_NP(sp)
+  beqz t0, 3f  # np == 0 返回内核态，直接跳到3
+  
+  addi t0, sp, CONTEXT_SIZE
+  csrw mscratch, t0
+
+3:
   MAP(REGS, POP)
 
-  addi sp, sp, CONTEXT_SIZE
+  LOAD sp, OFFSET_SP(sp) # 恢复栈指针
+
   mret
