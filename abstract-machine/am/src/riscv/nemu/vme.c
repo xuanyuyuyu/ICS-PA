@@ -111,6 +111,8 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
 Context *ucontext(AddrSpace *as, Area kstack, void *entry) {
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
 
+  c->np = 1; //用户线程，返回user态
+
   memset(c, 0, sizeof(Context));
 
   c->mepc = (uintptr_t)entry;

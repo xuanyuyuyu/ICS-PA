@@ -47,8 +47,11 @@ extern void __am_asm_trap(void);
 
 bool cte_init(Context*(*handler)(Event, Context*)) {
   // initialize exception entry
-  asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));
+  //把__am_asm_trap的地址放到 mtvec 中
+  asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));  
 
+  //系统初始化的时候，mscratch为0
+  asm volatile("csrw mscratch, zero");
   // register event handler
   user_handler = handler;
 
@@ -60,6 +63,7 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
 
   // c 就是指向这份新线程初始现场的指针。  end为高地址
   Context *c = (Context *)((uintptr_t)kstack.end - sizeof(Context));
+  c->np = 0;  //内核线程，最后返回到内核（np = 0）
   
   //寄存器初值设置为0
   memset(c, 0, sizeof(Context));

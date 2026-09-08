@@ -27,6 +27,8 @@ typedef struct {
   word_t mcause;
   word_t satp;  //mode和根页表的物理页号
   bool INTR;  //是否时钟中断
+  word_t mscratch;  //保存内核栈指针  发生中断后，内核不应该继续使用用户栈，应该切换到内核栈
+
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode

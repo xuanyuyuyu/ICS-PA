@@ -87,6 +87,7 @@ static word_t csr_read(uint32_t csr) {
    case 0x341: return cpu.mepc; break;
    case 0x342: return cpu.mcause; break;
    case 0x180: return cpu.satp; break;
+   case 0x340: return cpu.mscratch; break;
    default:
     panic("Unsupported CSR: 0x%x", csr);
   }
@@ -99,6 +100,7 @@ static void csr_write(uint32_t csr, word_t value) {
     case 0x341: cpu.mepc = value; break;
     case 0x342: cpu.mcause = value; break;
     case 0x180: cpu.satp = value; break;
+    case 0x340: cpu.mscratch = value; break;
     default:
     panic("Unsupported CSR: 0x%x", csr);
   }

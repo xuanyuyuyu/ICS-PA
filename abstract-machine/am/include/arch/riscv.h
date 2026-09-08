@@ -14,6 +14,8 @@ struct Context {
   uintptr_t mepc;  //硬件自动填入触发异常那一条指令的 PC 地址。
 
   void *pdir;
+
+  uintptr_t np;  //0: kernel, 1: user  表示Context恢复后，属于内核线程还是用户进程
 };
 
 #ifdef __riscv_e
