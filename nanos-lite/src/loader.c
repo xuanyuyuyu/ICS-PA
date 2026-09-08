@@ -166,8 +166,13 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   pcb->cp = ucontext(&pcb->as, RANGE(pcb->stack, pcb->stack + STACK_SIZE), (void *)entry);
   
   int argc = 0;
-  while(argv[argc] != NULL) {
-    argc ++;
+  while (argv != NULL && argv[argc] != NULL) {
+    argc++;
+  }
+
+  int envc = 0;
+  while (envp != NULL && envp[envc] != NULL) {
+    envc++;
   }
 
   //为新用户程序申请8页 = 32KB
@@ -181,19 +186,62 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
     map(&pcb->as, (void *)(ustack_va + i * PGSIZE), ustack_pa + i * PGSIZE, MMAP_READ | MMAP_WRITE);
   }
 
-  //参数暂时放在物理栈顶
-  uintptr_t *args_pa = (uintptr_t *)(ustack_pa + 8*PGSIZE - 3 * sizeof(uintptr_t));
+  size_t string_bytes = 0;
+  for (int i = 0; i < argc; i++) {
+    string_bytes += strlen(argv[i]) + 1;
+  }
+  for (int i = 0; i < envc; i++) {
+    string_bytes += strlen(envp[i]) + 1;
+  }
+
+  uintptr_t stack_bottom_pa = (uintptr_t)ustack_pa;
+  uintptr_t stack_top_pa = stack_bottom_pa + 8 * PGSIZE;
+
+  // 字符串放在栈的最高处，指针数组和启动参数放在其下方。
+  uintptr_t strings_bottom_pa = stack_top_pa - string_bytes;
+  uintptr_t arrays_top_pa = ROUNDDOWN(strings_bottom_pa, sizeof(uintptr_t));
+
+  uintptr_t *envp_pa = (uintptr_t *)(arrays_top_pa
+      - (envc + 1) * sizeof(uintptr_t));
+  uintptr_t *argv_pa = envp_pa - (argc + 1);
+
+  // _start 会把 a0 直接作为 sp，因此保证初始栈 16 字节对齐。
+  uintptr_t *args_pa = (uintptr_t *)ROUNDDOWN(
+      (uintptr_t)argv_pa - 3 * sizeof(uintptr_t), 16);
+
+  assert((uintptr_t)args_pa >= stack_bottom_pa);
+
+  uintptr_t string_cursor_pa = stack_top_pa;
+
+  for (int i = 0; i < argc; i++) {
+    size_t len = strlen(argv[i]) + 1;
+    string_cursor_pa -= len;
+    memcpy((void *)string_cursor_pa, argv[i], len);
+    argv_pa[i] = ustack_va + (string_cursor_pa - stack_bottom_pa);
+  }
+  argv_pa[argc] = 0;
+
+  for (int i = 0; i < envc; i++) {
+    size_t len = strlen(envp[i]) + 1;
+    string_cursor_pa -= len;
+    memcpy((void *)string_cursor_pa, envp[i], len);
+    envp_pa[i] = ustack_va + (string_cursor_pa - stack_bottom_pa);
+  }
+  envp_pa[envc] = 0;
+
+  uintptr_t argv_va = ustack_va
+      + ((uintptr_t)argv_pa - stack_bottom_pa);
+  uintptr_t envp_va = ustack_va
+      + ((uintptr_t)envp_pa - stack_bottom_pa);
+  uintptr_t args_va = ustack_va
+      + ((uintptr_t)args_pa - stack_bottom_pa);
 
   args_pa[0] = argc;
-  args_pa[1] = (uintptr_t)argv;
-  args_pa[2] = (uintptr_t)envp;
+  args_pa[1] = argv_va;
+  args_pa[2] = envp_va;
 
-  // 将参数区的物理地址换算成对应的用户虚拟地址
-  uintptr_t args_va =
-      ustack_va +
-      ((uintptr_t)args_pa - (uintptr_t)ustack_pa);
-  
-  // a0传给用户程序的必须是虚拟地址
+  // a0 是 _start 的参数；同时初始化 sp，避免首条用户指令前到来的中断看到无效栈。
   pcb->cp->GPRx = args_va;
+  pcb->cp->gpr[2] = args_va;
 
 }
