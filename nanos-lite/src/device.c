@@ -18,7 +18,7 @@ static const char *keyname[256] __attribute__((used)) = {
 };
 
 size_t serial_write(const void *buf, size_t offset, size_t len) {
-  yield();
+  // yield();
   (void)offset;
   
   const char *str = (const char *)buf;
@@ -30,7 +30,7 @@ size_t serial_write(const void *buf, size_t offset, size_t len) {
 }
 
 size_t events_read(void *buf, size_t offset, size_t len) {
-  yield();
+  // yield();
   (void)offset;
 
   if(buf == NULL || len == 0) {
@@ -82,7 +82,7 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-   yield();
+  //  yield();
   if(buf == NULL || len == 0) {
     return 0;
   }
